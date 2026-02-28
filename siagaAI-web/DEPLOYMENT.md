@@ -4,18 +4,18 @@
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────┐
 │   Frontend      │────▶│   Backend       │────▶│  MongoDB    │
-│   (Vercel)     │     │   (Render)      │     │  (Atlas)    │
+│   (Vercel)     │     │   (Railway)     │     │  (Atlas)    │
 └─────────────────┘     └─────────────────┘     └─────────────┘
 ```
 
 ## Prerequisites
 - Vercel account (frontend)
-- Render account (backend)
+- Railway account (backend)
 - MongoDB Atlas (already configured)
 
 ---
 
-## Step 1: Deploy Backend ke Render
+## Step 1: Deploy Backend ke Railway
 
 ### 1.1 Push Code ke GitHub
 ```bash
@@ -29,25 +29,24 @@ git remote add origin https://github.com/yourusername/siagaAI.git
 git push -u origin main
 ```
 
-### 1.2 Deploy ke Render
-1. Login to [Render](https://render.com)
-2. Click "New +" → "Web Service"
-3. Connect your GitHub repository
+### 1.2 Deploy ke Railway
+1. Login to [Railway](https://railway.app)
+2. Click "New Project" → "Deploy from GitHub repo"
+3. Select your repository
 4. Configure:
-   - **Name**: siagaai-backend
-   - **Environment**: Python
+   - **Root Directory**: `backend`
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `python app.py`
-5. Add Environment Variables:
+5. Add Environment Variables (di Railway dashboard → Variables tab):
    - `GOOGLE_CLIENT_ID`: your Google Client ID
    - `JWT_SECRET`: generate random string (32+ chars)
-   - `MONGODB_URI`: `mongodb+srv://editormxz_db_user:WQC796PGk7QfGylL@siagaai.m0pmtec.mongodb.net/?appName=siagaAI`
+   - `MONGODB_URI`: your MongoDB Atlas connection string
    - `FLASK_ENV`: production
-6. Click "Create Web Service"
+6. Click "Deploy"
 
 ### 1.3 Get Backend URL
 After deployment, you'll get a URL like:
-`https://siagaai-backend.onrender.com`
+`https://siagaai-backend-production.up.railway.app`
 
 ---
 
@@ -57,7 +56,7 @@ After deployment, you'll get a URL like:
 Edit `frontend/.env.production`:
 ```env
 VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
-VITE_API_URL=https://siagaai-backend.onrender.com
+VITE_API_URL=https://siagaai-backend-production.up.railway.app
 ```
 
 ### 2.2 Deploy ke Vercel
@@ -81,7 +80,7 @@ In Google Cloud Console:
 1. Go to **APIs & Services** → **Credentials**
 2. Click your OAuth 2.0 Client
 3. Add to **Authorized redirect URIs**:
-   - `https://siagaai-backend.onrender.com/api/auth/google`
+   - `https://siagaai-backend-production.up.railway.app/api/auth/google`
 4. Add to **Authorized JavaScript origins**:
    - `https://your-vercel-app.vercel.app`
 
@@ -111,7 +110,7 @@ CORS(app, origins=["https://your-vercel-app.vercel.app"])
 ## Troubleshooting
 
 ### 500 Error on API
-- Check Render logs for errors
+- Check Railway logs for errors
 - Verify environment variables are set correctly
 
 ### CORS Error
