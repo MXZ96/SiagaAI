@@ -14,12 +14,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # MongoDB Configuration
-MONGODB_URI = os.getenv('mongodb+srv://editormxz_db_user:<db_password>@siagaai.m0pmtec.mongodb.net/?appName=siagaAI')
+MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb+srv://editormxz_db_user:WQC796PGk7QfGylL@siagaai.m0pmtec.mongodb.net/?appName=siagaAI')
 MONGODB_DB_NAME = 'siagaAI'
 
 # Initialize MongoDB
 try:
-    mongo_client = pymongo.MongoClient(MONGODB_URI)
+    mongo_client = pymongo.MongoClient(
+        MONGODB_URI,
+        tls=True,
+        tlsAllowInvalidCertificates=True,
+        tlsDisableOCSPEndpointCheck=True,
+        serverSelectionTimeoutMS=30000,
+        connectTimeoutMS=30000
+    )
     db = mongo_client[MONGODB_DB_NAME]
     reports_collection = db.reports
     users_collection = db.users

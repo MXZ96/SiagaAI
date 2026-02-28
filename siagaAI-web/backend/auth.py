@@ -24,7 +24,15 @@ JWT_SECRET = os.getenv('JWT_SECRET', '6d3f17cb6d5d7ce136b28ca95dfb3772ff54023261
 
 # Initialize MongoDB client
 try:
-    mongo_client = pymongo.MongoClient(MONGODB_URI)
+    # Try with TLS parameters from URI first
+    mongo_client = pymongo.MongoClient(
+        MONGODB_URI,
+        tls=True,
+        tlsAllowInvalidCertificates=True,
+        tlsDisableOCSPEndpointCheck=True,
+        serverSelectionTimeoutMS=30000,
+        connectTimeoutMS=30000
+    )
     db = mongo_client[MONGODB_DB_NAME]
     users_collection = db.users
     reports_collection = db.reports
