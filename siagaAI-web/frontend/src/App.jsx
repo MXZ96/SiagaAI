@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import RiskAlert from './components/RiskAlert'
 import Chatbot from './components/Chatbot'
 import DamageUpload from './components/DamageUpload'
@@ -306,6 +307,7 @@ function App() {
   return (
     <AuthProvider>
       <AppContent />
+      <Analytics />
     </AuthProvider>
   )
 }
