@@ -6,16 +6,15 @@ import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
-import UserLogin from './pages/UserLogin'
-import { AuthProvider, useAuth } from './context/AuthContext'
 
-// Inner component that uses useAuth
+
+// App content
 function AppContent() {
   const [currentPage, setCurrentPage] = useState('home')
   const [location, setLocation] = useState('jakarta')
   const [showChatbot, setShowChatbot] = useState(false)
   const [cities, setCities] = useState([])
-  const { user, isAuthenticated, logout, loading } = useAuth()
+  
 
   // Fetch cities list
   useEffect(() => {
@@ -27,7 +26,7 @@ function AppContent() {
       .catch(console.error)
   }, [])
 
-  // Check for admin/user pages on mount and hash change
+  // Check for admin pages on mount and hash change
   useEffect(() => {
     const checkHash = () => {
       const hash = window.location.hash
@@ -35,8 +34,6 @@ function AppContent() {
         setCurrentPage('admin-login')
       } else if (hash === '#/admin-dashboard') {
         setCurrentPage('admin-dashboard')
-      } else if (hash === '#/login') {
-        setCurrentPage('user-login')
       }
     }
     
@@ -59,16 +56,9 @@ function AppContent() {
       window.location.hash = '#/admin-login'
     } else if (page === 'admin-dashboard') {
       window.location.hash = '#/admin-dashboard'
-    } else if (page === 'user-login') {
-      window.location.hash = '#/login'
     } else {
       window.location.hash = ''
     }
-  }
-
-  // Show user login page
-  if (currentPage === 'user-login') {
-    return <UserLogin onNavigate={navigateTo} />
   }
 
   // Show admin login page
@@ -177,18 +167,7 @@ function AppContent() {
                     </svg>
                   </button>
                 </div>
-              ) : (
-                <button
-                  onClick={() => navigateTo('user-login')}
-                  className="ml-2 px-3 py-2 rounded-xl text-dark-muted hover:text-primary-400 hover:bg-dark-card transition-colors flex items-center gap-2 border border-dark-border"
-                  title="Login"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span className="text-sm font-medium">Masuk</span>
-                </button>
-              )}
+              ) : null}
 
               {/* Admin Button */}
               <button
@@ -250,33 +229,9 @@ function AppContent() {
           />
         )}
         {currentPage === 'damage' && (
-          // Show login prompt if not authenticated, otherwise show damage upload
-          !isAuthenticated ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="bg-dark-card rounded-2xl p-8 max-w-md text-center border border-dark-border">
-                <div className="w-16 h-16 bg-primary-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-bold text-dark-text mb-2">Login Diperlukan</h2>
-                <p className="text-dark-muted mb-6">
-                  Anda harus login untuk mengirim laporan kerusakan bencana.
-                </p>
-                <button
-                  onClick={() => navigateTo('user-login')}
-                  className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold py-3 px-6 rounded-xl transition-all"
-                >
-                  Masuk dengan Google
-                </button>
-              </div>
-            </div>
-          ) : (
-            <DamageUpload 
-              location={location} 
-              user={user}
-            />
-          )
+          <DamageUpload 
+            location={location} 
+          />
         )}
       </main>
 
