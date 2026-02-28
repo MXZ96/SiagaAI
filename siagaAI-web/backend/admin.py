@@ -55,7 +55,7 @@ def register_admin_routes(app):
     @admin_required
     def get_admin_reports():
         """Get all reports for admin"""
-        if not reports_collection:
+        if reports_collection is None:
             return jsonify({'error': 'Database not connected', 'reports': [], 'pending_count': 0, 'approved_count': 0, 'rejected_count': 0}), 200
         
         try:
@@ -103,7 +103,7 @@ def register_admin_routes(app):
     @admin_required
     def approve_report(report_id):
         """Approve a report"""
-        if not reports_collection:
+        if reports_collection is None:
             return jsonify({'error': 'Database not connected'}), 500
         
         try:
@@ -124,7 +124,7 @@ def register_admin_routes(app):
     @admin_required
     def reject_report(report_id):
         """Reject a report"""
-        if not reports_collection:
+        if reports_collection is None:
             return jsonify({'error': 'Database not connected'}), 500
         
         try:
@@ -145,7 +145,7 @@ def register_admin_routes(app):
     @admin_required
     def delete_report(report_id):
         """Delete a report"""
-        if not reports_collection:
+        if reports_collection is None:
             return jsonify({'error': 'Database not connected'}), 500
         
         try:
@@ -163,7 +163,7 @@ def register_admin_routes(app):
     @admin_required
     def get_report(report_id):
         """Get a single report by ID"""
-        if not reports_collection:
+        if reports_collection is None:
             return jsonify({'error': 'Database not connected'}), 500
         
         try:
@@ -206,7 +206,7 @@ def register_admin_routes(app):
     @admin_required
     def get_admin_stats():
         """Get overall statistics"""
-        if not reports_collection or not users_collection:
+        if reports_collection is None or users_collection is None:
             return jsonify({'error': 'Database not connected'}), 500
         
         try:
