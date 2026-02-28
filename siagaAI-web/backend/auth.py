@@ -17,9 +17,9 @@ from bson.objectid import ObjectId
 load_dotenv()
 
 # MongoDB Configuration
-MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/siagaai')
+MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb+srv://editormxz_db_user:<db_password>@siagaai.m0pmtec.mongodb.net/?appName=siagaAI')
 MONGODB_DB_NAME = 'siagaAI'
-GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_ID = os.getenv('483084676706-030qqlcte3gsfo9gt73qu28qpk3k48ka.apps.googleusercontent.com')
 JWT_SECRET = os.getenv('JWT_SECRET', 'dev-secret-change-in-production')
 
 # Initialize MongoDB client
