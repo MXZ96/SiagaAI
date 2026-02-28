@@ -138,24 +138,41 @@ def parse_bmkg_weather_data(data):
         if not data or 'data' not in data or len(data['data']) == 0:
             return None
             
-        cuaca_data = data['data'][0].get('cuaca', [])
+        data_item = data['data'][0]
+        
+        # Handle case where data_item might be a list instead of dict
+        if isinstance(data_item, list):
+            cuaca_data = data_item
+        else:
+            cuaca_data = data_item.get('cuaca', [])
+        
         if not cuaca_data:
             return None
             
         # Get current hour forecast (first available)
         current = cuaca_data[0] if cuaca_data else {}
         
+        # Handle case where current might be a list
+        if isinstance(current, list):
+            current = current[0] if current else {}
+        
+        # Safely get values from current dict
+        def safe_get(d, key, default='N/A'):
+            if isinstance(d, dict):
+                return d.get(key, default)
+            return default
+        
         return {
             'source': 'BMKG',
-            'temperature': current.get('t', 'N/A'),
-            'humidity': current.get('hu', 'N/A'),
-            'wind_speed': current.get('ws', 'N/A'),
-            'wind_direction': current.get('wd', 'N/A'),
-            'weather_code': int(current.get('weather_code', 0)),
-            'weather_desc': current.get('weather_desc', 'Unknown'),
-            'local_datetime': current.get('local_datetime', ''),
-            'visibility': current.get('vs', '10'),
-            'uv_index': current.get('uv', '5'),
+            'temperature': safe_get(current, 't', 'N/A'),
+            'humidity': safe_get(current, 'hu', 'N/A'),
+            'wind_speed': safe_get(current, 'ws', 'N/A'),
+            'wind_direction': safe_get(current, 'wd', 'N/A'),
+            'weather_code': int(safe_get(current, 'weather_code', 0)) if safe_get(current, 'weather_code', 0) != 'N/A' else 0,
+            'weather_desc': safe_get(current, 'weather_desc', 'Unknown'),
+            'local_datetime': safe_get(current, 'local_datetime', ''),
+            'visibility': safe_get(current, 'vs', '10'),
+            'uv_index': safe_get(current, 'uv', '5'),
             'forecast': cuaca_data[:8] if len(cuaca_data) > 8 else cuaca_data
         }
     except Exception as e:
@@ -743,7 +760,7 @@ def get_reports():
         # Get user count from MongoDB
         user_count = 1  # Default admin
         try:
-            if users_collection:
+            if users_collection is not None:
                 user_count += users_collection.count_documents({})
         except:
             pass
@@ -751,12 +768,12 @@ def get_reports():
         # Get report count
         report_count = 0
         try:
-            if reports_collection:
+            if reports_collection is not None:
                 report_count = reports_collection.count_documents({})
         except:
             pass
         
-        if reports_collection:
+        if reports_collection is not None:
             reports = list(reports_collection.find().sort('created_at', -1).limit(50))
             for r in reports:
                 r['_id'] = str(r['_id'])
@@ -801,7 +818,7 @@ def get_stats():
         # Get user count from MongoDB (include admin = 1)
         user_count = 1  # Default admin
         try:
-            if users_collection:
+            if users_collection is not None:
                 user_count += users_collection.count_documents({})
         except:
             pass
@@ -809,7 +826,7 @@ def get_stats():
         # Get report count
         report_count = 0
         try:
-            if reports_collection:
+            if reports_collection is not None:
                 report_count = reports_collection.count_documents({})
         except:
             pass
@@ -839,7 +856,7 @@ def create_report():
     # Try to save to MongoDB
     try:
         from admin import reports_collection
-        if reports_collection:
+        if reports_collection is not None:
             report_doc = {
                 'lat': data.get('lat', 0),
                 'lng': data.get('lng', 0),
