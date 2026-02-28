@@ -62,6 +62,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
 
     try {
+      console.log('Calling backend API:', `${API_URL}/api/auth/google`);
       const response = await fetch(`${API_URL}/api/auth/google`, {
         method: 'POST',
         headers: {
@@ -70,7 +71,9 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ credential: googleCredential }),
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');

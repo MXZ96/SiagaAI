@@ -61,7 +61,9 @@ export default function UserLogin({ onNavigate }) {
       
       if (idToken) {
         setGoogleLoading(true);
+        console.log('Sending credential to backend...');
         const result = await loginWithGoogle(idToken);
+        console.log('Login result:', result);
         setGoogleLoading(false);
         
         if (result.success && onNavigate) {
