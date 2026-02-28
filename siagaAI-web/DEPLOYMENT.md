@@ -55,8 +55,8 @@ After deployment, you'll get a URL like:
 ### 2.1 Update Environment Variables
 Edit `frontend/.env.production`:
 ```env
-VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
-VITE_API_URL=https://siagaai-backend-production.up.railway.app
+VITE_GOOGLE_CLIENT_ID=483084676706-030qqlcte3gsfo9gt73qu28qpk3k48ka.apps.googleusercontent.com
+VITE_API_URL=https://siagaai-production.up.railway.app
 ```
 
 ### 2.2 Deploy ke Vercel
@@ -80,7 +80,7 @@ In Google Cloud Console:
 1. Go to **APIs & Services** → **Credentials**
 2. Click your OAuth 2.0 Client
 3. Add to **Authorized redirect URIs**:
-   - `https://siagaai-backend-production.up.railway.app/api/auth/google`
+   - `https://siagaai-production.up.railway.app/api/auth/google`
 4. Add to **Authorized JavaScript origins**:
    - `https://your-vercel-app.vercel.app`
 
