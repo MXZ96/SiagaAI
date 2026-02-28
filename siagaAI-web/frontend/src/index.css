@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  body {
+    @apply bg-dark-bg text-dark-text font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-dark-card/80 backdrop-blur-lg border border-dark-border;
+  }
+  
+  .glass-card {
+    @apply bg-dark-card/60 backdrop-blur-xl border border-white/10 rounded-2xl;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-500 to-primary-600 text-white px-6 py-3 rounded-xl font-semibold 
+           hover:from-primary-600 hover:to-primary-700 transition-all duration-300
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-dark-bg
+           shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40;
+  }
+  
+  .btn-danger {
+    @apply bg-gradient-to-r from-danger-500 to-danger-600 text-white px-6 py-3 rounded-xl font-semibold
+           hover:from-danger-600 hover:to-danger-700 transition-all duration-300
+           shadow-lg shadow-danger-500/25 hover:shadow-danger-500/40;
+  }
+  
+  .btn-success {
+    @apply bg-gradient-to-r from-success-500 to-success-600 text-white px-6 py-3 rounded-xl font-semibold
+           hover:from-success-600 hover:to-success-700 transition-all duration-300
+           shadow-lg shadow-success-500/25 hover:shadow-success-500/40;
+  }
+  
+  .card {
+    @apply bg-dark-card rounded-2xl p-6 border border-dark-border;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-xl
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
+           placeholder:text-dark-muted text-dark-text transition-all;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600 bg-clip-text text-transparent;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+    }
+    to {
+      box-shadow: 0 0 40px rgba(14, 165, 233, 0.5);
+    }
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Leaflet dark mode overrides */
+.leaflet-container {
+  background: #1e293b !important;
+  border-radius: 1rem;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-radius: 0.75rem !important;
+}
+
+.leaflet-popup-tip {
+  background: #1e293b !important;
+}
+
+.leaflet-control-zoom a {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #334155 !important;
+}
