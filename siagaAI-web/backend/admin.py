@@ -21,11 +21,14 @@ MONGODB_DB_NAME = 'siagaAI'
 try:
     mongo_client = pymongo.MongoClient(
         MONGODB_URI,
-        tls=True,
-        tlsAllowInvalidCertificates=True,
         serverSelectionTimeoutMS=30000,
-        connectTimeoutMS=30000
+        connectTimeoutMS=30000,
+        socketTimeoutMS=30000,
+        retryWrites=True,
+        retryReads=True
     )
+    # Test connection
+    mongo_client.admin.command('ping')
     db = mongo_client[MONGODB_DB_NAME]
     reports_collection = db.reports
     users_collection = db.users

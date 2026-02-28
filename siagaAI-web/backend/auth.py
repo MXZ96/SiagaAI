@@ -27,11 +27,14 @@ try:
     # Try with TLS parameters from URI first
     mongo_client = pymongo.MongoClient(
         MONGODB_URI,
-        tls=True,
-        tlsAllowInvalidCertificates=True,
         serverSelectionTimeoutMS=30000,
-        connectTimeoutMS=30000
+        connectTimeoutMS=30000,
+        socketTimeoutMS=30000,
+        retryWrites=True,
+        retryReads=True
     )
+    # Test connection
+    mongo_client.admin.command('ping')
     db = mongo_client[MONGODB_DB_NAME]
     users_collection = db.users
     reports_collection = db.reports
