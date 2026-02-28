@@ -2,8 +2,8 @@
   "$schema": "https://railway.app/railway.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pip install -r backend/requirements.txt",
-    "startCommand": "cd backend && python app.py"
+    "buildCommand": "pip install -r requirements.txt",
+    "startCommand": "python app.py"
   },
   "deploy": {
     "numReplicas": 1,
