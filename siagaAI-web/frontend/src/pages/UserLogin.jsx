@@ -66,8 +66,16 @@ export default function UserLogin({ onNavigate }) {
         console.log('Login result:', result);
         setGoogleLoading(false);
         
-        if (result.success && onNavigate) {
-          onNavigate('home');
+        console.log('Result success:', result?.success, 'onNavigate:', typeof onNavigate);
+        if (result?.success) {
+          if (onNavigate) {
+            onNavigate('home');
+          } else {
+            // Fallback: use window.location
+            window.location.href = '/#/home';
+          }
+        } else {
+          console.error('Login failed:', result?.error);
         }
       }
     }
