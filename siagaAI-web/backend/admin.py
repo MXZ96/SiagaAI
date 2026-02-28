@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # MongoDB Configuration
-MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/siagaai')
+MONGODB_URI = os.getenv('mongodb+srv://editormxz_db_user:<db_password>@siagaai.m0pmtec.mongodb.net/?appName=siagaAI')
 MONGODB_DB_NAME = 'siagaAI'
 
 # Initialize MongoDB
