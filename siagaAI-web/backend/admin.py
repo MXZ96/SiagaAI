@@ -182,7 +182,7 @@ def register_admin_routes(app):
     @admin_required
     def get_users():
         """Get all users (admin only)"""
-        if not users_collection:
+        if users_collection is None:
             return jsonify({'error': 'Database not connected'}), 500
         
         try:

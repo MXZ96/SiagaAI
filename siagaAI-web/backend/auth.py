@@ -135,7 +135,7 @@ def get_or_create_user(user_info):
     Get existing user or create new one
     One Gmail = One account (prevent duplicates by email/google_id)
     """
-    if not users_collection:
+    if users_collection is None:
         return None, "Database not connected"
     
     try:
@@ -185,7 +185,7 @@ def get_or_create_user(user_info):
 
 def get_user_by_id(user_id):
     """Get user by ID (exclude sensitive data)"""
-    if not users_collection:
+    if users_collection is None:
         return None
     
     try:
@@ -201,7 +201,7 @@ def get_user_by_id(user_id):
 
 def update_user_reports_count(user_id, increment=1):
     """Update user's reports count"""
-    if not users_collection:
+    if users_collection is None:
         return False
     
     try:
