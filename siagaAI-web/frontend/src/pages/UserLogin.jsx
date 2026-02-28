@@ -56,28 +56,38 @@ export default function UserLogin({ onNavigate }) {
   };
 
   const handleCredentialResponse = async (response) => {
-    if (response.access_token) {
-      const idToken = response.credential;
+    console.log('Google response:', response);
+    
+    // Handle new Token Model (gsi/client)
+    let idToken = response.credential;
+    
+    // Also check for access_token (newer Google OAuth)
+    if (!idToken && response.access_token) {
+      // For access_token flow, we need to exchange it for an ID token
+      // But simpler: use the id_token directly if available
+      console.log('Got access_token, checking for id_token...');
+    }
+    
+    if (idToken) {
+      setGoogleLoading(true);
+      console.log('Sending credential to backend...');
+      const result = await loginWithGoogle(idToken);
+      console.log('Login result:', result);
+      setGoogleLoading(false);
       
-      if (idToken) {
-        setGoogleLoading(true);
-        console.log('Sending credential to backend...');
-        const result = await loginWithGoogle(idToken);
-        console.log('Login result:', result);
-        setGoogleLoading(false);
-        
-        console.log('Result success:', result?.success, 'onNavigate:', typeof onNavigate);
-        if (result?.success) {
-          if (onNavigate) {
-            onNavigate('home');
-          } else {
-            // Fallback: use window.location
-            window.location.href = '/#/home';
-          }
+      console.log('Result success:', result?.success, 'onNavigate:', typeof onNavigate);
+      if (result?.success) {
+        if (onNavigate) {
+          onNavigate('home');
         } else {
-          console.error('Login failed:', result?.error);
+          // Fallback: use window.location
+          window.location.href = '/#/home';
         }
+      } else {
+        console.error('Login failed:', result?.error);
       }
+    } else {
+      console.error('No credential or access_token in response');
     }
   };
 
