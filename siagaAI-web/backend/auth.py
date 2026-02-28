@@ -19,7 +19,7 @@ load_dotenv()
 # MongoDB Configuration
 MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb+srv://editormxz_db_user:<db_password>@siagaai.m0pmtec.mongodb.net/?appName=siagaAI')
 MONGODB_DB_NAME = 'siagaAI'
-GOOGLE_CLIENT_ID = os.getenv('483084676706-030qqlcte3gsfo9gt73qu28qpk3k48ka.apps.googleusercontent.com')
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
 JWT_SECRET = os.getenv('JWT_SECRET', '6d3f17cb6d5d7ce136b28ca95dfb3772ff54023261ce1ad65029b36e684bbc71')
 
 # Initialize MongoDB client
