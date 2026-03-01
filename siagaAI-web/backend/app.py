@@ -932,9 +932,11 @@ def assess_damage():
             "Content-Type": "application/json"
         }
         
-        # Prepare the payload for router endpoint
+        # Prepare the payload for router endpoint (use base64 for JSON serialization)
+        import base64
+        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
         payload = {
-            "inputs": image_bytes
+            "inputs": image_base64
         }
         
         # First, get image caption
