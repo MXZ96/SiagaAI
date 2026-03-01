@@ -6,7 +6,6 @@ import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
-import { AuthProvider } from './context/AuthContext'
 
 // App content
 function AppContent() {
@@ -229,12 +228,10 @@ function AppContent() {
   )
 }
 
-// Main App with AuthProvider
+// Main App
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <AppContent />
   )
 }
 
