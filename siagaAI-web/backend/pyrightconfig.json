@@ -1,0 +1,8 @@
+{
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.ignore": [
+    "reportMissingImports",
+    "reportMissingModuleSource"
+  ],
+  "python.analysis.typeCheckingMode": "basic"
+}
