@@ -917,8 +917,8 @@ def assess_damage():
         GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', 'AIzaSyDjbclGw4Isx7U-Z21h4IQRPOvvDZaG1iY')
         genai.configure(api_key=GEMINI_API_KEY)
         
-        # Use gemini-3.1-flash-image-preview for image analysis
-        model = genai.GenerativeModel('gemini-3.1-flash-image-preview')
+        # Use gemini-2.5-flash-image for image analysis
+        model = genai.GenerativeModel('gemini-2.5-flash-image')
         
         # Extract image from base64 data URL if needed
         if ',' in image_data:
