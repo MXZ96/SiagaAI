@@ -895,6 +895,33 @@ def create_report():
         }
     })
 
+
+@app.route('/api/assess-damage', methods=['POST'])
+def assess_damage():
+    """Assess damage from uploaded image"""
+    data = request.get_json()
+    
+    # Mock damage assessment - in production, this would use AI/ML
+    # For now, return a simulated assessment based on random factors
+    import random
+    
+    severities = ['low', 'medium', 'high', 'critical']
+    damage_types = ['structural', 'flood', 'fire', 'other']
+    
+    # Simulate analysis delay
+    return jsonify({
+        "success": True,
+        "severity": random.choice(severities),
+        "damage_type": random.choice(damage_types),
+        "confidence": round(random.uniform(0.7, 0.95), 2),
+        "description": "Damage assessment completed. Please provide additional details about the damage.",
+        "recommended_actions": [
+            "Take photos from multiple angles",
+            "Ensure personal safety",
+            "Contact local authorities if critical"
+        ]
+    })
+
 # ==================== Run App ====================
 
 # Register auth routes
