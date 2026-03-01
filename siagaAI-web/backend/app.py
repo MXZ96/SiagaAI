@@ -1049,6 +1049,58 @@ def assess_damage():
 
 # ==================== Run App ====================
 
+# Helper function for keyword-based analysis
+def analyze_with_keywords(caption_lower):
+    """Fallback keyword-based analysis"""
+    disaster = "none"
+    confidence = 0.3
+    severity = "low"
+    reason = "no clear destructive disaster visible"
+    
+    # Check for flood indicators
+    flood_keywords = ['flood', 'flooded', 'water', 'inundated', 'submerged', 'rising water', 'banjir', 'air', 'genangan']
+    if any(kw in caption_lower for kw in flood_keywords):
+        disaster = "flood"
+        confidence = 0.8
+        severity = "medium"
+        reason = "Caption indicates flooding"
+    
+    # Check for fire indicators
+    fire_keywords = ['fire', 'flame', 'smoke', 'burning', 'firefighter', 'kebakaran', 'api', 'asap']
+    if any(kw in caption_lower for kw in fire_keywords):
+        disaster = "fire"
+        confidence = 0.85
+        severity = "high"
+        reason = "Caption indicates fire"
+    
+    # Check for earthquake indicators
+    earthquake_keywords = ['collapsed', 'destroyed', 'rubble', 'debris', 'damaged building', 'crack', 'gempa', 'rusak', 'rubuh']
+    if any(kw in caption_lower for kw in earthquake_keywords):
+        disaster = "earthquake"
+        confidence = 0.75
+        severity = "high"
+        reason = "Caption indicates structural damage"
+    
+    # Check for landslide
+    landslide_keywords = ['mud', 'landslide', 'rocks', 'debris flow', 'tanah', 'longsor', 'batu']
+    if any(kw in caption_lower for kw in landslide_keywords):
+        disaster = "landslide"
+        confidence = 0.8
+        severity = "high"
+        reason = "Caption indicates landslide"
+    
+    # Check for tsunami/waves
+    tsunami_keywords = ['wave', 'tsunami', 'coast', 'beach flooding', 'ombak', 'pantai']
+    if any(kw in caption_lower for kw in tsunami_keywords):
+        disaster = "tsunami"
+        confidence = 0.7
+        severity = "high"
+        reason = "Caption indicates coastal disaster"
+    
+    return disaster, confidence, severity, reason
+
+# ==================== Run App ====================
+
 # Register auth routes
 register_auth_routes(app)
 
