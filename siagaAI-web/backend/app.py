@@ -915,8 +915,8 @@ def assess_damage():
         GEMINI_API_KEY = "AIzaSyCbgl8hIPysCv0dmlmU-aeydX4OUBrvYq8"
         genai.configure(api_key=GEMINI_API_KEY)
         
-        # Use gemini-1.5-flash for faster response
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Use gemini-pro-vision for image analysis (free tier)
+        model = genai.GenerativeModel('gemini-pro-vision')
         
         # Step 1: Check if image is a disaster
         disaster_check_prompt = """Analyze this image and determine if it shows a natural disaster or emergency situation.
