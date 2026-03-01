@@ -1303,11 +1303,12 @@ def assess_damage():
               - severity: Tingkat keparahan (low/medium/high)
               - damage_description: Deskripsi kerusakan
               - recommended_actions: Rekomendasi tindakan
+              - color_analysis: Hasil analisis warna HSV
     
     Notes:
-        - Menggunakan HuggingFace BLIP model untuk analisis gambar
-        - Jika API key tidak tersedia, mengembalikan hasil demo
-        - Mendeteksi berbagai jenis bencana dari gambar
+        - Menggunakan hybrid approach: Color-based classification + HuggingFace AI
+        - Color analysis menggunakan HSV, GLCM, Edge Detection
+        - Jika API key tidak tersedia, menggunakan hasil analisis warna saja
     """
     data = request.get_json()
     image_data = data.get('image', '')
@@ -1319,141 +1320,151 @@ def assess_damage():
         }), 400
     
     try:
-        import base64
-        import io
-        import requests
+        # First: Use disaster classifier (color-based analysis)
+        from disaster_classifier import classify_disaster
         
-        # Get HuggingFace API key from environment
-        # IMPORTANT: Set HF_API_KEY in Railway environment variables
-        # Get from: https://huggingface.co/settings/tokens
-        hf_api_key = os.environ.get('HF_API_KEY', '')
+        # Perform hybrid color/texture/edge classification
+        color_result = classify_disaster(image_data)
         
-        if not hf_api_key:
-            # Fallback to random for demo if no API key
-            return generate_demo_assessment()
+        print(f"Color classification result: {color_result}")
         
-        # Decode base64 image
+        # Parse color-based results
+        is_disaster = color_result.get("success", False) and color_result.get("kategori_bencana") != "Tidak Teridentifikasi"
+        disaster_type = color_result.get("kategori_bencana", "Tidak Teridentifikasi")
+        confidence_str = color_result.get("confidence_score", "0%").replace("%", "")
+        color_confidence = float(confidence_str) / 100 if confidence_str else 0
+        
+        # Determine severity based on confidence
+        severity = "low"
+        if color_confidence > 0.7:
+            severity = "high"
+        elif color_confidence > 0.4:
+            severity = "medium"
+        
+        # Map disaster names to expected format
+        disaster_names_map = {
+            "Kebakaran": "Kebakaran",
+            "Banjir": "Banjir",
+            "Erupsi Gunung Berapi": "Gunung Berapi",
+            "Gempa Bumi": "Gempa",
+            "Tanah Longsor": "Tanah Longsor",
+            "Tsunami": "Tsunami",
+            "Tidak Teridentifikasi": None
+        }
+        
+        mapped_disaster_type = disaster_names_map.get(disaster_type, disaster_type)
+        
+        # Get recommended actions based on disaster type
+        recommended_actions_map = {
+            "Kebakaran": [
+                "Evakuasi segera dari area terdampak",
+                "Hubungi pemadam kebakaran (113)",
+                "Matikan sumber api jika aman",
+                "Jauhi area dengan asap tebal"
+            ],
+            "Banjir": [
+                "Evakuasi ke tempat tinggi",
+                "Hindari genangan air",
+                "Siapkan barang berharga",
+                "Hubungi tim penyelamat (112)"
+            ],
+            "Gunung Berapi": [
+                "Evakuasi segera dari zona berbahaya",
+                "Gunakan masker untuk避开 abu vulkanik",
+                "Tutup pintu dan jendela",
+                "Ikuti instruksi petugas"
+            ],
+            "Gempa Bumi": [
+                "Evakuasi ke area terbuka",
+                "Lindungi kepala dan tubuh",
+                "Jauhi gedung dan struktur",
+                "Periksa kerusakan setelah gempa"
+            ],
+            "Tanah Longsor": [
+                "Evakuasi segera dari area berpotensi longsor",
+                "Hindari lereng bukit",
+                "Perhatikan tanda-tanda retakan tanah",
+                "Hubungi petugas bencana"
+            ],
+            "Tsunami": [
+                "Evakuasi ke dataran tinggi",
+                "Jauhi pantai dan tepi laut",
+                "Ikuti peringatan tsunami",
+                "Jangan kembali sebelum dinyatakan aman"
+            ]
+        }
+        
+        recommended_actions = recommended_actions_map.get(disaster_type, [
+            "Ikuti petunjuk petugas bencana",
+            "Tetap tenang dan berhati-hati"
+        ])
+        
+        # Build response with color analysis
+        response = {
+            "success": True,
+            "is_disaster": is_disaster,
+            "disaster_type": mapped_disaster_type,
+            "visual_evidence": color_result.get("reason", ""),
+            "confidence": color_confidence,
+            "severity": severity if is_disaster else None,
+            "reason": color_result.get("reason", ""),
+            "damage_type": disaster_type.lower().replace(" ", "_") if disaster_type else None,
+            "damage_description": color_result.get("reason", ""),
+            "affected_areas": ["area yang terdeteksi dari analisis"] if is_disaster else [],
+            "recommended_actions": recommended_actions,
+            "estimated_impact": f"{severity.capitalize()} impact requiring response" if is_disaster else "No disaster detected",
+            "color_analysis": color_result.get("analisis_fitur", {}),
+            "skor_detail": color_result.get("skor_detail", {}),
+            "top_2_kemungkinan": color_result.get("top_2_kemungkinan", [])
+        }
+        
+        # Try to enhance with HuggingFace AI if available
         try:
-            # Remove data URL prefix if present
-            if ',' in image_data:
-                image_data = image_data.split(',')[1]
-            image_bytes = base64.b64decode(image_data)
+            import base64
+            import requests
+            
+            hf_api_key = os.environ.get('HF_API_KEY', '')
+            
+            if hf_api_key:
+                # Decode base64 image
+                try:
+                    img_data = image_data
+                    if ',' in img_data:
+                        img_data = img_data.split(',')[1]
+                    image_bytes = base64.b64decode(img_data)
+                except:
+                    image_bytes = None
+                
+                if image_bytes:
+                    # Call HuggingFace API
+                    headers = {"Authorization": f"Bearer {hf_api_key}"}
+                    api_url = "https://api-inference.huggingface.co/pipeline/image-text-to-text/Salesforce/blip-image-captioning-base"
+                    
+                    try:
+                        hf_response = requests.post(api_url, headers=headers, data=image_bytes, timeout=30)
+                        if hf_response.status_code == 200:
+                            result = hf_response.json()
+                            caption = ""
+                            if isinstance(result, list) and len(result) > 0:
+                                caption = result[0].get('generated_text', '')
+                            elif isinstance(result, dict):
+                                caption = result.get('generated_text', '')
+                            
+                            # Enhance response with AI caption
+                            if caption:
+                                response["visual_evidence"] = caption
+                                response["damage_description"] = f"{color_result.get('reason', '')} | AI: {caption}"
+                    except Exception as e:
+                        print(f"HuggingFace API error: {e}")
         except Exception as e:
-            print(f"Error decoding image: {e}")
-            return generate_demo_assessment()
+            print(f"Error calling HuggingFace: {e}")
         
-        # Call HuggingFace Inference API
-        # Using the image-text-to-text pipeline for BLIP
-        headers = {
-            "Authorization": f"Bearer {hf_api_key}"
-        }
-        
-        # Use the correct inference endpoint for BLIP
-        api_url = "https://api-inference.huggingface.co/pipeline/image-text-to-text/Salesforce/blip-image-captioning-base"
-        
-        response = requests.post(
-            api_url,
-            headers=headers,
-            data=image_bytes,
-            timeout=60
-        )
-        
-        if response.status_code != 200:
-            print(f"HuggingFace API error: {response.status_code} - {response.text}")
-            return generate_demo_assessment()
-        
-        # Parse the response
-        result = response.json()
-        print(f"BLIP result: {result}")
-        
-        # Extract caption from response
-        caption = ""
-        if isinstance(result, list) and len(result) > 0:
-            if isinstance(result[0], dict) and 'generated_text' in result[0]:
-                caption = result[0]['generated_text']
-            elif isinstance(result[0], str):
-                caption = result[0]
-        elif isinstance(result, dict):
-            caption = result.get('generated_text', '')
-        
-        # Analyze the caption to determine if it's a disaster
-        disaster_keywords = {
-            'flood': ['water', 'flood', 'flooding', 'inundation', 'submerged', 'river', 'flooded'],
-            'fire': ['fire', 'flame', 'burning', 'smoke', 'firefighter', 'fire truck', 'ash'],
-            'earthquake': ['earthquake', 'collapsed', 'rubble', 'crack', 'destroyed', 'damaged building'],
-            'landslide': ['landslide', 'mudslide', 'landslide', 'rocks', 'debris'],
-            'storm': ['storm', 'hurricane', 'tornado', 'wind', 'damage', 'destroyed']
-        }
-        
-        caption_lower = caption.lower()
-        
-        # Check if caption contains disaster keywords
-        detected_disaster = None
-        for disaster_type, keywords in disaster_keywords.items():
-            for keyword in keywords:
-                if keyword in caption_lower:
-                    detected_disaster = disaster_type
-                    break
-            if detected_disaster:
-                break
-        
-        # If no disaster detected, check for general damage indicators
-        damage_indicators = ['damage', 'destroyed', 'ruin', 'wreck', 'collapse', 'broken', 'debris', 'victim', 'disaster']
-        has_damage = any(indicator in caption_lower for indicator in damage_indicators)
-        
-        if not detected_disaster and has_damage:
-            # Generic disaster
-            detected_disaster = 'disaster'
-        
-        if detected_disaster:
-            # Disaster detected - provide assessment
-            severity = 'medium'
-            if any(word in caption_lower for word in ['severe', 'major', 'extensive', 'destroyed', 'collapsed']):
-                severity = 'high'
-            elif any(word in caption_lower for word in ['small', 'minor', 'slight', 'little']):
-                severity = 'low'
+        return jsonify(response)
             
-            disaster_names = {
-                'flood': 'Banjir',
-                'fire': 'Kebakaran',
-                'earthquake': 'Gempa Bumi',
-                'landslide': 'Tanah Longsor',
-                'storm': 'Badai',
-                'disaster': 'Bencana Alam'
-            }
-            
-            return jsonify({
-                "success": True,
-                "is_disaster": True,
-                "disaster_type": disaster_names.get(detected_disaster, 'Bencana Alam'),
-                "visual_evidence": caption,
-                "confidence": 0.85,
-                "severity": severity,
-                "reason": f"AI analysis detected: {caption}",
-                "damage_type": detected_disaster,
-                "damage_description": f"Visible damage from {detected_disaster}: {caption}",
-                "affected_areas": ["residential area", "infrastructure"],
-                "recommended_actions": [
-                    "Evacuate the area if necessary",
-                    "Contact emergency services",
-                    "Follow local authority instructions"
-                ],
-                "estimated_impact": severity.capitalize() + " impact requiring response"
-            })
-        else:
-            # Not a disaster image
-            return jsonify({
-                "success": True,
-                "is_disaster": False,
-                "visual_evidence": caption,
-                "confidence": 0.90,
-                "reason": "The image does not appear to show a disaster",
-                "disaster_type": None,
-                "damage_type": None,
-                "damage_description": None,
-                "recommended_actions": ["No action required - image is not disaster-related"]
-            })
-            
+    except ImportError as e:
+        print(f"Error importing disaster classifier: {e}")
+        # Fallback to demo
+        return generate_demo_assessment()
     except Exception as e:
         import traceback
         print(f"Error analyzing image: {e}")

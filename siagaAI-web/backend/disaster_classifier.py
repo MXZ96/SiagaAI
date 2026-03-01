@@ -421,67 +421,175 @@ def classify_disaster(image_data: str) -> dict:
     print(f"Lava: {lava}, Cone: {cone}, Smoke: {smoke}")
     print(f"Foam: {foam}, Horizon: {horizon}, Flatness: {flatness}")
     
-    # Step 5: Calculate probability scores
+    # Step 5: Calculate probability scores with ULTRA-STRICT validation
+    
+    # Calculate base scores with stricter weighting
     merah = features.get("merah", 0)
     oranye = features.get("oranye", 0)
     hijau = features.get("hijau", 0)
     biru = features.get("biru", 0)
     coklat = features.get("coklat", 0)
     abu = features.get("abu", 0)
+    putih = features.get("putih", 0)
     entropy = texture.get("entropy", 0)
     contrast = texture.get("contrast", 0)
     homogeneity = texture.get("homogeneity", 0)
+    energy = texture.get("energy", 0)
     horizontal_edge = edge.get("horizontal_ratio", 0)
     irregular_edge = edge.get("irregular_ratio", 0)
+    edge_density = edge.get("edge_density", 0)
     building_damage = edge.get("building_damage", False)
     slope_pattern = edge.get("slope_pattern", False)
+    wave_pattern = edge.get("wave_pattern", False)
     
-    # Calculate scores based on new formulas
-    score_kebakaran = (
-        merah * 0.25 + 
-        oranye * 0.25 + 
-        entropy * 0.2 + 
-        (0.15 if smoke["smoke_detected"] else 0) + 
-        irregular_edge * 0.15 * 100
-    ) / 10
+    # STRICT scoring - require multiple strong indicators
+    # KEBAKARAN vs GUNUNG BERAPI differentiation:
+    # - Kebakaran: Diffuse fire/smoke, scattered red/orange, NO cone shape
+    # - Gunung Berapi: Cone shape (mountain peak), lava, concentrated heat source
     
-    score_gunung_berapi = (
-        (0.25 if lava["lava_detected"] else lava["lava_score"] * 0.25) +
-        (0.25 if cone["cone_shape_detected"] else cone["cone_score"] * 0.25) +
-        (0.2 if smoke["smoke_detected"] else smoke["smoke_score"] * 0.2) +
-        merah * 0.15 +
-        entropy * 0.15
-    )
+    fire_colors = merah + oranye
+    has_cone = cone["cone_shape_detected"]
     
-    score_gempa = (
-        (0.35 if building_damage else 0) +
-        irregular_edge * 0.25 * 100 +
-        (0.2 if abu > 15 else abu / 100) +  # dust presence
-        (0.2 if not lava["lava_detected"] else 0)
-    )
+    # ===== KEBAKARAN: Diffuse fire patterns (no mountain) =====
+    score_kebakaran = 0
     
-    score_tsunami = (
-        (0.3 if edge.get("wave_pattern", False) else 0) +
-        horizontal_edge * 0.25 * 100 +
-        (0.2 if foam["foam_detected"] else foam["foam_score"] * 0.2) +
-        biru * 0.15 +
-        (0.1 if horizon["horizon_detected"] else 0)
-    )
+    if fire_colors >= 25 and smoke["smoke_detected"] and not has_cone:
+        # Fire + smoke + NO cone = KEBAKARAN
+        score_kebakaran = 0.95
+    elif fire_colors >= 40 and entropy >= 2.5 and not has_cone:
+        score_kebakaran = 0.92
+    elif fire_colors >= 35 and not has_cone:
+        score_kebakaran = 0.88
+    elif fire_colors >= 30 and smoke["smoke_score"] >= 0.4 and not has_cone:
+        score_kebakaran = 0.82
+    elif fire_colors >= 25 and entropy >= 3.0 and not has_cone:
+        score_kebakaran = 0.75
+    elif fire_colors >= 30 and not has_cone:
+        score_kebakaran = 0.65
+    else:
+        score_kebakaran = (fire_colors / 100) * 0.5 + smoke["smoke_score"] * 0.3
     
-    score_banjir = (
-        (0.35 if flatness["surface_flat"] else flatness["flatness_score"] * 0.35) +
-        (0.25 if homogeneity > 0.5 else homogeneity * 0.25) +
-        coklat * 0.2 +
-        (0.2 if not edge.get("wave_pattern", False) else 0.1)
-    )
+    # If there's a cone shape, it's likely volcano not fire
+    if has_cone:
+        score_kebakaran *= 0.2
     
-    score_tanah_longsor = (
-        hijau * 0.25 +
-        coklat * 0.25 +
-        contrast * 0.1 +
-        irregular_edge * 0.2 * 100 +
-        (0.1 if slope_pattern else 0)
-    )
+    # ===== GUNUNG BERAPI: Volcanic eruption (cone + lava) =====
+    score_gunung_berapi = 0
+    
+    if lava["lava_detected"] and has_cone:
+        # LAVA + CONE = DEFINITE volcano
+        score_gunung_berapi = 0.98
+    elif lava["lava_detected"] and smoke["smoke_detected"]:
+        score_gunung_berapi = 0.94
+    elif has_cone and smoke["smoke_detected"]:
+        score_gunung_berapi = 0.90
+    elif lava["lava_score"] >= 0.6 and has_cone:
+        score_gunung_berapi = 0.88
+    elif has_cone and fire_colors >= 20:
+        score_gunung_berapi = 0.85
+    elif lava["lava_score"] >= 0.5:
+        score_gunung_berapi = 0.75
+    elif has_cone:
+        score_gunung_berapi = 0.70
+    else:
+        score_gunung_berapi = lava["lava_score"] * 0.4 + cone["cone_score"] * 0.4 + smoke["smoke_score"] * 0.2
+    
+    # If NO cone shape and just fire, reduce volcano score
+    if not has_cone and fire_colors > 25:
+        score_gunung_berapi *= 0.3
+    
+    # Gempa: needs BUILDING DAMAGE + (HIGH IRREGULAR EDGE OR DUST)
+    score_gempa = 0
+    if building_damage and irregular_edge > 0.35:
+        score_gempa = 0.95
+    elif building_damage and abu > 20:
+        score_gempa = 0.90
+    elif building_damage and edge_density > 25:
+        score_gempa = 0.85
+    elif irregular_edge > 0.4 and abu > 15:
+        score_gempa = 0.80
+    elif building_damage:
+        score_gempa = 0.70
+    else:
+        score_gempa = irregular_edge * 1.5 + (abu / 100) * 0.5
+    
+    # Tsunami: needs WAVE PATTERN + (HORIZON OR FOAM OR BLUE)
+    score_tsunami = 0
+    if wave_pattern and horizon["horizon_detected"] and biru > 15:
+        score_tsunami = 0.95
+    elif wave_pattern and foam["foam_detected"]:
+        score_tsunami = 0.90
+    elif wave_pattern and horizontal_edge > 0.6 and biru > 20:
+        score_tsunami = 0.85
+    elif horizon["horizon_detected"] and foam["foam_detected"]:
+        score_tsunami = 0.80
+    elif wave_pattern and horizontal_edge > 0.55:
+        score_tsunami = 0.70
+    else:
+        score_tsunami = horizontal_edge * 0.8 + (biru / 100) * 0.5 + foam["foam_score"] * 0.3
+    
+    # Banjir: needs FLAT SURFACE + (WATER COLOR OR HIGH HOMOGENEITY)
+    score_banjir = 0
+    if flatness["surface_flat"] and coklat > 25 and homogeneity > 0.6:
+        score_banjir = 0.95
+    elif flatness["surface_flat"] and biru > 20 and homogeneity > 0.5:
+        score_banjir = 0.90
+    elif flatness["surface_flat"] and coklat > 20:
+        score_banjir = 0.80
+    elif homogeneity > 0.65 and coklat > 15 and not wave_pattern:
+        score_banjir = 0.75
+    elif flatness["flatness_score"] >= 0.6:
+        score_banjir = 0.65
+    else:
+        score_banjir = flatness["flatness_score"] * 0.5 + homogeneity * 0.5 + (coklat / 100) * 0.3
+    
+    # Tanah Longsor: needs GREEN + BROWN + (IRREGULAR EDGE OR SLOPE)
+    score_tanah_longsor = 0
+    green_brown = hijau + coklat
+    if green_brown >= 40 and irregular_edge > 0.25 and slope_pattern:
+        score_tanah_longsor = 0.95
+    elif green_brown >= 35 and irregular_edge > 0.3:
+        score_tanah_longsor = 0.90
+    elif green_brown >= 40 and contrast > 4:
+        score_tanah_longsor = 0.85
+    elif hijau > 25 and coklat > 20 and irregular_edge > 0.2:
+        score_tanah_longsor = 0.75
+    elif green_brown >= 30 and slope_pattern:
+        score_tanah_longsor = 0.65
+    else:
+        score_tanah_longsor = (green_brown / 100) * 0.6 + irregular_edge * 1.2
+    
+    # Apply minimum indicators validation
+    min_indicators = {
+        "kebakaran": (merah + oranye >= 20) or (smoke["smoke_detected"] and (merah + oranye >= 10)),
+        "gunung_berapi": lava["lava_detected"] or (cone["cone_shape_detected"] and smoke["smoke_detected"]),
+        "gempa": building_damage or (irregular_edge > 0.2 and abu > 10),
+        "tsunami": (wave_pattern and horizontal_edge > 0.4) or (foam["foam_detected"] and biru > 10),
+        "banjir": (flatness["surface_flat"] and homogeneity > 0.4) or (coklat > 20 and homogeneity > 0.5),
+        "tanah_longsor": (hijau + coklat >= 30 and irregular_edge > 0.15) or (slope_pattern and coklat > 15)
+    }
+    
+    # Penalize scores without minimum indicators
+    if not min_indicators["kebakaran"] and score_kebakaran > 0.5:
+        score_kebakaran *= 0.4
+    if not min_indicators["gunung_berapi"] and score_gunung_berapi > 0.5:
+        score_gunung_berapi *= 0.4
+    if not min_indicators["gempa"] and score_gempa > 0.5:
+        score_gempa *= 0.4
+    if not min_indicators["tsunami"] and score_tsunami > 0.5:
+        score_tsunami *= 0.4
+    if not min_indicators["banjir"] and score_banjir > 0.5:
+        score_banjir *= 0.4
+    if not min_indicators["tanah_longsor"] and score_tanah_longsor > 0.5:
+        score_tanah_longsor *= 0.4
+    
+    # Cap scores at 0.95
+    score_kebakaran = min(score_kebakaran, 0.95)
+    score_gunung_berapi = min(score_gunung_berapi, 0.95)
+    score_gempa = min(score_gempa, 0.95)
+    score_tsunami = min(score_tsunami, 0.95)
+    score_banjir = min(score_banjir, 0.95)
+    score_tanah_longsor = min(score_tanah_longsor, 0.95)
     
     scores = {
         "kebakaran": round(score_kebakaran, 4),
@@ -507,12 +615,29 @@ def classify_disaster(image_data: str) -> dict:
         "tanah_longsor": "Tanah Longsor"
     }
     
-    # Determine category
-    threshold = 0.4
-    if top_score >= threshold:
+    # Determine category with ULTRA-STRICT threshold
+    # Only classify if confidence is VERY HIGH
+    threshold = 0.65  # Much higher threshold
+    
+    # Check if there's significant gap between top 2 scores
+    if len(sorted_scores) >= 2:
+        score_gap = sorted_scores[0][1] - sorted_scores[1][1]
+        if score_gap < 0.20:
+            # Too close - require even higher threshold
+            threshold = 0.70
+        if score_gap < 0.10:
+            threshold = 0.75
+    
+    # Must have minimum indicator for top category
+    top_category = sorted_scores[0][0]
+    min_indicator_met = min_indicators.get(top_category, False)
+    
+    # Also require reasonable scores for other categories not to be too close
+    if top_score >= threshold and min_indicator_met:
         kategori = sorted_scores[0][0]
         kategori_bencana = disaster_names.get(kategori, kategori.title())
-        confidence = round(top_score * 100, 1)
+        # Cap confidence based on how close other scores are
+        confidence = round(min(top_score * 100, 95), 1)
     else:
         kategori_bencana = "Tidak Teridentifikasi"
         confidence = round(top_score * 100, 1)
