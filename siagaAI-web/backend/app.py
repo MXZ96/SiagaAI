@@ -912,9 +912,13 @@ def assess_damage():
         import requests
         import base64
         import json
+        import re
         
-        # Configure HuggingFace API (use environment variable to avoid exposing key in code)
+        # Configure HuggingFace API from environment variable
         HF_API_KEY = os.environ.get('HF_API_KEY')
+        
+        if not HF_API_KEY:
+            raise Exception("HF_API_KEY not configured")
         
         # Extract image from base64 data URL if needed
         if ',' in image_data:
@@ -925,15 +929,13 @@ def assess_damage():
         image_bytes = base64.b64decode(image_data)
         
         # Use HuggingFace's image captioning model via router
-        # Format: model path without /models/ prefix
-        API_URL = "https://router.huggingface.co/Salesforce/blip-image-captioning-base"
+        API_URL = "https://router.huggingface.co/hf-inference/models/Salesforce/blip-image-captioning-base"
         headers = {
             "Authorization": f"Bearer {HF_API_KEY}",
             "Content-Type": "application/json"
         }
         
         # Prepare the payload for router endpoint (use base64 for JSON serialization)
-        import base64
         image_base64 = base64.b64encode(image_bytes).decode('utf-8')
         payload = {
             "inputs": image_base64
@@ -959,15 +961,15 @@ def assess_damage():
         reason = "no clear destructive disaster visible"
         
         # Check for flood indicators
-        flood_keywords = ['flood', 'flooded', 'water', 'inundated', 'submerged', 'rising water']
+        flood_keywords = ['flood', 'flooded', 'water', 'inundated', 'submerged', 'rising water', 'banjir', 'air', 'genangan']
         if any(kw in caption_lower for kw in flood_keywords):
             disaster = "flood"
             confidence = 0.8
-            severity = "high" if 'street' in caption_lower or 'city' in caption_lower else "medium"
+            severity = "high" if 'street' in caption_lower or 'city' in caption_lower or 'road' in caption_lower else "medium"
             reason = f"Caption indicates flooding: {caption}"
         
         # Check for fire indicators
-        fire_keywords = ['fire', 'flame', 'smoke', 'burning', 'firefighter']
+        fire_keywords = ['fire', 'flame', 'smoke', 'burning', 'firefighter', 'kebakaran', 'api', 'asap']
         if any(kw in caption_lower for kw in fire_keywords):
             disaster = "fire"
             confidence = 0.85
@@ -975,7 +977,7 @@ def assess_damage():
             reason = f"Caption indicates fire: {caption}"
         
         # Check for earthquake indicators
-        earthquake_keywords = ['collapsed', 'destroyed', 'rubble', 'debris', 'damaged building', 'crack']
+        earthquake_keywords = ['collapsed', 'destroyed', 'rubble', 'debris', 'damaged building', 'crack', 'gempa', 'rusak', 'rubuh']
         if any(kw in caption_lower for kw in earthquake_keywords):
             disaster = "earthquake_damage"
             confidence = 0.75
@@ -983,7 +985,7 @@ def assess_damage():
             reason = f"Caption indicates structural damage: {caption}"
         
         # Check for landslide
-        landslide_keywords = ['mud', 'landslide', 'rocks', 'debris flow']
+        landslide_keywords = ['mud', 'landslide', 'rocks', 'debris flow', 'tanah', 'longsor', 'batu']
         if any(kw in caption_lower for kw in landslide_keywords):
             disaster = "landslide"
             confidence = 0.8
@@ -991,7 +993,7 @@ def assess_damage():
             reason = f"Caption indicates landslide: {caption}"
         
         # Check for tsunami/waves
-        tsunami_keywords = ['wave', 'tsunami', 'coast', 'beach flooding']
+        tsunami_keywords = ['wave', 'tsunami', 'coast', 'beach flooding', 'ombak', 'pantai']
         if any(kw in caption_lower for kw in tsunami_keywords):
             disaster = "tsunami"
             confidence = 0.7
