@@ -1,7 +1,19 @@
 """
-SiagaAI Backend - Flask Application
-Disaster Preparedness Platform API
-BMKG Integration + All Indonesian Cities + Complete Data
+SiagaAI Backend - Aplikasi Flask
+Platform Kesiapsiagaan Bencana Alam
+Integrasi API BMKG + Semua Kota Indonesia + Data Lengkap
+
+Dokumentasi Bahasa Indonesia:
+- Aplikasi utama backend untuk platform SiagaAI
+- Mengintegrasikan data BMKG (cuaca,gempa,peringatan dini)
+- Menyediakan API untuk 20 kota besar Indonesia
+- Zone risiko banjir dan longsor
+- Titik evakuasi untuk evakuasi bencana
+- Chatbot AI untuk respons tanggap darurat
+- Sistem laporan kerusakan dan penilaian kerusakan gambar
+
+Author: SiagaAI Team
+Version: 1.0.0
 """
 
 from flask import Flask, request, jsonify
@@ -87,7 +99,20 @@ BMKG_HEADERS = {
 # ==================== BMKG API Functions ====================
 
 def fetch_bmkg_weather(city_id):
-    """Fetch weather data directly from BMKG API"""
+    """
+    Mengambil data cuaca langsung dari API BMKG.
+    
+    Args:
+        city_id (str): ID kota yang akan diambil datanya (contoh: 'jakarta', 'surabaya')
+    
+    Returns:
+        dict: Data cuaca dalam format yang sudah diparse, atau data fallback jika gagal
+    
+    Notes:
+        - Menggunakan endpoint API BMKG untuk prakiraan cuaca
+        - Jika API gagal, akan mengembalikan data cuaca simulasi (fallback)
+        - Data mencakup: suhu, kelembaban, kecepatan angin, arah angin, deskripsi cuaca
+    """
     bmkg_code = BMKG_CITY_CODES.get(city_id, "31.71.01.1001")
     url = f"https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4={bmkg_code}"
     
@@ -105,7 +130,22 @@ def fetch_bmkg_weather(city_id):
     return get_fallback_weather(city_id)
 
 def get_fallback_weather(city_id):
-    """Return fallback weather data when BMKG is unavailable"""
+    """
+    Mengembalikan data cuaca alternatif ketika BMKG tidak tersedia.
+    
+    Args:
+        city_id (str): ID kota untuk data cuaca
+    
+    Returns:
+        dict: Data cuaca simulasi yang realistis berdasarkan waktu hari ini
+    
+    Notes:
+        - Menghasilkan data cuaca yang sesuai dengan pola waktu di Indonesia
+        - Pagi: Cerah berawan
+        - Siang: Panas, kemungkinan hujan sore
+        - Sore: Musim hujan, hujan sedang
+        - Malam/Malam hari: Berawan
+    """
     city_name = next((c['name'] for c in INDONESIAN_CITIES if c['id'] == city_id), 'Unknown')
     
     # Get realistic weather based on time of day (Indonesia timezone)
@@ -178,7 +218,21 @@ def get_fallback_weather(city_id):
     }
 
 def parse_bmkg_weather_data(data):
-    """Parse BMKG weather data to our format"""
+    """
+    Mem-parse data cuaca BMKG ke format aplikasi kita.
+    
+    Args:
+        data (dict/list): Response dari API BMKG
+    
+    Returns:
+        dict: Data cuaca yang sudah diparse dalam format standar,
+              atau None jika parsing gagal
+    
+    Notes:
+        - Menangani berbagai format response dari BMKG
+        - Mencoba beberapa struktur data yang berbeda
+        - Mengambil data cuaca (cuaca) dari respons
+    """
     try:
         if not data:
             return None
@@ -253,7 +307,17 @@ def parse_bmkg_weather_data(data):
         return None
 
 def fetch_bmkg_earthquake():
-    """Fetch latest earthquake data from BMKG API"""
+    """
+    Mengambil data gempa bumi terbaru dari API BMKG.
+    
+    Returns:
+        dict: Data gempa dalam format yang sudah diparse,
+              atau None jika gagal mengambil data
+    
+    Notes:
+        - Menggunakan endpoint TEWS (Tsunami Early Warning System) BMKG
+        - Mengambil data gempa bumi terbaru
+    """
     url = "https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json"
     
     try:
@@ -267,7 +331,23 @@ def fetch_bmkg_earthquake():
     return None
 
 def parse_bmkg_earthquake_data(data):
-    """Parse BMKG earthquake data to our format"""
+    """
+    Mem-parse data gempa bumi BMKG ke format aplikasi.
+    
+    Args:
+        data (dict): Response JSON dari API BMKG earthquake
+    
+    Returns:
+        dict: Data gempa yang sudah diparse termasuk:
+              - datetime, date, time: Waktu kejadian
+              - magnitude: Magnitudo gempa
+              - depth: Kedalaman hypocenter
+              - latitude, longitude: Koordinat lokasi
+              - location: Wilayah/deteksi dirasakan
+              - potential: Potensi tsunami (jika ada)
+              - felt: Daftar kota yang merasakan
+              - shakemap: URL peta guncangan
+    """
     try:
         if not data or 'Gempa' not in data:
             return None
@@ -294,7 +374,16 @@ def parse_bmkg_earthquake_data(data):
         return None
 
 def fetch_bmkg_earthquakes_felt():
-    """Fetch recent felt earthquakes from BMKG API"""
+    """
+    Mengambil data gempa yang dirasakan dari API BMKG.
+    
+    Returns:
+        list: Daftar earthquake yang dirasakan (maksimum 15)
+    
+    Notes:
+        - Mengambil data地震 yang dirasakan oleh masyarakat
+        - Berguna untuk melihat aktivitas seismik terkini
+    """
     url = "https://data.bmkg.go.id/DataMKG/TEWS/gempadirasakan.json"
     
     try:
@@ -308,7 +397,19 @@ def fetch_bmkg_earthquakes_felt():
     return []
 
 def parse_bmkg_earthquakes_felt_data(data):
-    """Parse BMKG felt earthquakes data"""
+    """
+    Mem-parse data earthquake yang dirasakan.
+    
+    Args:
+        data (dict): Response dari API gempadirasakan.json
+    
+    Returns:
+        list: Daftar dictionary berisi data earthquake yang dirasakan
+    
+    Notes:
+        - Mengambil data maksimum 15 earthquake terbaru
+        - Setiap earthquake memiliki info: datetime, magnitude, depth, location, felt
+    """
     earthquakes = []
     try:
         if not data or 'gempa' not in data:
@@ -333,7 +434,16 @@ def parse_bmkg_earthquakes_felt_data(data):
     return earthquakes
 
 def fetch_bmkg_early_warnings():
-    """Fetch early warning alerts from BMKG API"""
+    """
+    Mengambil peringatan dini dari RSS feed BMKG.
+    
+    Returns:
+        list: Daftar peringatan dini BMKG
+    
+    Notes:
+        - Mengambil dari endpoint nowcast/rss.xml
+        - Berisi peringatan cuaca ekstrem dan bencana potensial
+    """
     url = "https://www.bmkg.go.id/alerts/nowcast/id/rss.xml"
     
     try:
@@ -346,7 +456,19 @@ def fetch_bmkg_early_warnings():
     return []
 
 def parse_bmkg_early_warnings(xml_content):
-    """Parse BMKG early warning RSS feed"""
+    """
+    Mem-parse RSS feed peringatan dini BMKG.
+    
+    Args:
+        xml_content (str): Konten XML dari RSS feed BMKG
+    
+    Returns:
+        list: Daftar peringatan dengan field: title, description, pubDate, link
+    
+    Notes:
+        - Menggunakan ElementTree untuk parsing XML
+        - Mengekstrak informasi dari setiap item di RSS
+    """
     warnings = []
     try:
         root = ET.fromstring(xml_content)
@@ -550,7 +672,16 @@ EVACUATION_POINTS = EVACUATION_POINTS + ADDITIONAL_EVACUATION
 
 @app.route('/')
 def index():
-    """API Health Check"""
+    """
+    Endpoint health check untuk API SiagaAI.
+    
+    Returns:
+        JSON: Informasi dasar API including version dan available endpoints
+    
+    Notes:
+        - Endpoint root untuk memeriksa apakah API aktif
+        - Menampilkan semua endpoint yang tersedia
+    """
     return jsonify({
         "name": "SiagaAI API",
         "version": "1.0.0",
@@ -568,7 +699,16 @@ def index():
 
 @app.route('/api/cities', methods=['GET'])
 def get_cities():
-    """Get all available cities"""
+    """
+    Mengambil semua kota Indonesia yang tersedia.
+    
+    Returns:
+        JSON: Dictionary berisi daftar cities dan jumlah total
+    
+    Notes:
+        - Mengembalikan 20 kota besar Indonesia
+        - Setiap kota memiliki: id, name, lat, lng, province
+    """
     return jsonify({
         "cities": INDONESIAN_CITIES,
         "count": len(INDONESIAN_CITIES)
@@ -576,7 +716,19 @@ def get_cities():
 
 @app.route('/api/weather', methods=['GET'])
 def get_weather():
-    """Get weather data for a city"""
+    """
+    Mengambil data cuaca untuk sebuah kota.
+    
+    Query Parameters:
+        city (str): ID kota (default: 'jakarta')
+    
+    Returns:
+        JSON: Data cuaca BMKG atau pesan error jika tidak tersedia
+    
+    Notes:
+        - Parameter 'city' digunakan untuk memilih kota
+        - Jika API BMKG gagal, mengembalikan data fallback
+    """
     city = request.args.get('city', 'jakarta')
     
     weather = fetch_bmkg_weather(city.lower())
@@ -590,7 +742,16 @@ def get_weather():
 
 @app.route('/api/earthquake', methods=['GET'])
 def get_earthquake():
-    """Get latest earthquake data"""
+    """
+    Mengambil data earthquake/gempa bumi terbaru.
+    
+    Returns:
+        JSON: Data earthquake terakhir dari BMKG atau pesan error
+    
+    Notes:
+        - Mengambil data dari TEWS (Tsunami Early Warning System)
+        - Incluye magnitudo, kedalaman, lokasi, dan info dirasakan
+    """
     earthquake = fetch_bmkg_earthquake()
     if earthquake:
         return jsonify(earthquake)
@@ -602,7 +763,16 @@ def get_earthquake():
 
 @app.route('/api/earthquakes-felt', methods=['GET'])
 def get_earthquakes_felt():
-    """Get felt earthquakes"""
+    """
+    Mengambil daftar earthquake yang dirasakan.
+    
+    Returns:
+        JSON: Dictionary dengan daftar earthquakes dan jumlah total
+    
+    Notes:
+        - Mengambil data earthquake yang dirasakan masyarakat
+        - Maksimum 15 earthquake terbaru
+    """
     earthquakes = fetch_bmkg_earthquakes_felt()
     return jsonify({
         "earthquakes": earthquakes,
@@ -611,7 +781,16 @@ def get_earthquakes_felt():
 
 @app.route('/api/early-warnings', methods=['GET'])
 def get_early_warnings():
-    """Get early warning alerts"""
+    """
+    Mengambil peringatan dini dari BMKG.
+    
+    Returns:
+        JSON: Dictionary dengan daftar peringatan dan jumlah total
+    
+    Notes:
+        - Mengambil dari RSS feed BMKG
+        - Berisi peringatan cuaca ekstrem
+    """
     warnings = fetch_bmkg_early_warnings()
     return jsonify({
         "warnings": warnings,
@@ -620,7 +799,30 @@ def get_early_warnings():
 
 @app.route('/api/risk', methods=['GET'])
 def get_risk():
-    """Get risk assessment for a city"""
+    """
+    Mengambil penilaian risiko untuk sebuah kota.
+    
+    Query Parameters:
+        city (str): ID kota (default: 'jakarta')
+    
+    Returns:
+        JSON: Penilaian risiko lengkap termasuk:
+              - city: Nama kota
+              - province: Provinsi
+              - alert_level: Level peringatan (red/orange/green)
+              - flood_risk: Risiko banjir
+              - landslide_risk: Risiko longsor
+              - description: Deskripsi kondisi
+              - recommendations: Rekomendasi tindakan
+              - weather: Data cuaca saat ini
+              - timestamp: Waktu pengambilan data
+    
+    Notes:
+        - Menghitung risiko berdasarkan zone risiko di kota tersebut
+        - Jika ada zone risiko tinggi, level menjadi 'red'
+        - Jika ada zone risiko sedang, level menjadi 'orange'
+        - Jika tidak ada zone risiko, level menjadi 'green'
+    """
     city = request.args.get('city', 'jakarta')
     city_info = next((c for c in INDONESIAN_CITIES if c['id'] == city), INDONESIAN_CITIES[0])
     
@@ -687,7 +889,19 @@ def get_risk():
 
 @app.route('/api/evacuation', methods=['GET'])
 def get_evacuation():
-    """Get evacuation points"""
+    """
+    Mengambil titik-titik evakuasi.
+    
+    Query Parameters:
+        city (str): ID kota (opsional, jika tidak diisi akan mengembalikan semua titik)
+    
+    Returns:
+        JSON: Dictionary dengan daftar titik evakuasi dan kapasitasnya
+    
+    Notes:
+        - Titik evakuasi mencakup: Stadion, Gedung Pemerintah, Lapangan, dll
+        - Setiap titik memiliki kapasitas maksimum pengungsi
+    """
     city = request.args.get('city', None)
     
     if city:
@@ -702,7 +916,19 @@ def get_evacuation():
 
 @app.route('/api/risk-zones', methods=['GET'])
 def get_risk_zones():
-    """Get all risk zones with weather data"""
+    """
+    Mengambil semua zone risiko dengan data cuaca.
+    
+    Query Parameters:
+        city (str): ID kota (opsional)
+    
+    Returns:
+        JSON: Dictionary dengan daftar zone risiko dan data cuaca kota
+    
+    Notes:
+        - Zone risiko meliputi: banjir, longsor, tsunami
+        - Setiap zone memiliki: name, lat, lng, radius, risk, type, description
+    """
     city = request.args.get('city', None)
     
     if city:
@@ -725,7 +951,21 @@ def get_risk_zones():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """Handle chat messages with AI chatbot"""
+    """
+    Menangani pesan dari pengguna chatbot AI.
+    
+    Request Body:
+        JSON dengan fields:
+        - message (str): Pesan dari pengguna
+        - city (str): ID kota yang dipilih (default: 'jakarta')
+    
+    Returns:
+        JSON: Response dari chatbot dan timestamp
+    
+    Notes:
+        - Menggunakan generate_emergency_response untuk membuat response
+        - Response bersifat kontekstual berdasarkan kota yang dipilih
+    """
     data = request.get_json()
     user_message = data.get('message', '')
     city = data.get('city', 'jakarta')
@@ -741,7 +981,27 @@ def chat():
     })
 
 def generate_emergency_response(message, city):
-    """Generate contextual emergency response"""
+    """
+    Menghasilkan response darurat kontekstual berdasarkan pesan user.
+    
+    Args:
+        message (str): Pesan dari pengguna
+        city (str): ID kota yang dipilih
+    
+    Returns:
+        str: Response yang sesuai dengan pertanyaan pengguna
+    
+    Notes:
+        - Mendeteksi kata kunci untuk menentukan jenis informasi yang diminta
+        - Kata kunci yang dikenali:
+          - evakuasi/rute/keluar/lari -> Titik evakuasi
+          - banjir/air/genangan -> Info banjir
+          - gempa/地震/quake -> Info earthquake
+          - cuaca/hujan/weather -> Info cuaca
+          - longsor/gunung/lereng -> Info longsor
+          - bantuan/help/darat -> Kontak darurat
+    """
+    message_lower = message.lower()
     message_lower = message.lower()
     city_info = next((c for c in INDONESIAN_CITIES if c['id'] == city), INDONESIAN_CITIES[0])
     city_name = city_info['name']
@@ -806,7 +1066,23 @@ ADMINS = {
 
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
-    """Admin login"""
+    """
+    Endpoint login untuk admin.
+    
+    Request Body:
+        JSON dengan fields:
+        - username (str): Username admin
+        - password (str): Password admin
+    
+    Returns:
+        JSON: Success=True + user info + token jika berhasil
+        JSON: Success=False + error jika kredensial salah
+    
+    Notes:
+        - Menggunakan sistem autentikasi sederhana
+        - Username default: admin (password: siagaai2024)
+        - Username operator (password: siagaop2024)
+    """
     data = request.get_json()
     username = data.get('username', '')
     password = data.get('password', '')
@@ -822,21 +1098,29 @@ def admin_login():
 
 @app.route('/api/reports', methods=['GET'])
 def get_reports():
-    """Get all damage reports"""
+    """
+    Mengambil semua laporan kerusakan.
+    
+    Returns:
+        JSON: Dictionary dengan:
+              - reports: Daftar laporan kerusakan
+              - count: Jumlah laporan
+              - stats: Statistik platform (cities, risk_zones, evacuation_points, users, reports_count)
+    
+    Notes:
+        - Mengambil dari MongoDB jika tersedia
+        - Mengembalikan data fallback jika database tidak tersedia
+        - Laporan diurutkan berdasarkan waktu pembuatan (terbaru dulu)
+    """
     try:
-        from admin import reports_collection, users_collection
+        from admin import reports_collection
         
         city_count = len(INDONESIAN_CITIES)
         risk_zone_count = len(RISK_ZONES)
         evacuation_count = len(EVACUATION_POINTS)
         
-        # Get user count from MongoDB
-        user_count = 1  # Default admin
-        try:
-            if users_collection is not None:
-                user_count += users_collection.count_documents({})
-        except:
-            pass
+        # User count - tidak ada sistem user
+        user_count = 1  # Default admin saja
         
         # Get report count
         report_count = 0
@@ -880,21 +1164,30 @@ def get_reports():
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
-    """Get platform statistics"""
+    """
+    Mengambil statistik platform.
+    
+    Returns:
+        JSON: Statistik platform meliputi:
+              - cities: Jumlah kota yang tersedia
+              - risk_zones: Jumlah zone risiko
+              - evacuation_points: Jumlah titik evakuasi
+              - users: Jumlah user terdaftar
+              - reports: Jumlah laporan kerusakan
+    
+    Notes:
+        - Mengambil data dari MongoDB jika tersedia
+        - Jika database tidak tersedia, mengembalikan data default
+    """
     try:
-        from admin import users_collection, reports_collection
+        from admin import reports_collection
         
         city_count = len(INDONESIAN_CITIES)
         risk_zone_count = len(RISK_ZONES)
         evacuation_count = len(EVACUATION_POINTS)
         
-        # Get user count from MongoDB (include admin = 1)
-        user_count = 1  # Default admin
-        try:
-            if users_collection is not None:
-                user_count += users_collection.count_documents({})
-        except:
-            pass
+        # User count - tidak ada sistem user
+        user_count = 1  # Default admin saja
         
         # Get report count
         report_count = 0
@@ -923,7 +1216,29 @@ def get_stats():
 
 @app.route('/api/reports', methods=['POST'])
 def create_report():
-    """Create damage report"""
+    """
+    Membuat laporan kerusakan baru.
+    
+    Request Body:
+        JSON dengan fields:
+        - lat (float): Latitude lokasi kerusakan
+        - lng (float): Longitude lokasi kerusakan
+        - city (str): ID kota
+        - location (str): Deskripsi lokasi
+        - type (str): Jenis kerusakan (default: 'damage')
+        - severity (str): Tingkat keparahan (low/medium/high)
+        - description (str): Deskripsi kerusakan
+        - image_url (str): URL gambar kerusakan
+        - reporter_name (str): Nama pelapor
+        - reporter_phone (str): No. telepon pelapor
+    
+    Returns:
+        JSON: Success=True + data laporan jika berhasil
+    
+    Notes:
+        - Menyimpan ke MongoDB jika tersedia
+        - Menggunakan response mock jika database tidak tersedia
+    """
     data = request.get_json()
     
     # Try to save to MongoDB
@@ -971,7 +1286,29 @@ def create_report():
 
 @app.route('/api/assess-damage', methods=['POST'])
 def assess_damage():
-    """Assess damage from uploaded image using HuggingFace BLIP model"""
+    """
+    Menilai kerusakan dari gambar yang diupload menggunakan AI.
+    
+    Request Body:
+        JSON dengan field:
+        - image (str): Data gambar dalam format base64
+    
+    Returns:
+        JSON: Hasil penilaian kerusakan meliputi:
+              - success: Status keberhasilan
+              - is_disaster: Apakah gambar menunjukkan bencana
+              - disaster_type: Jenis bencana (banjir/kebakaran/gempa/longsor/badai)
+              - visual_evidence: Caption dari AI
+              - confidence: Tingkat kepercayaan analisis
+              - severity: Tingkat keparahan (low/medium/high)
+              - damage_description: Deskripsi kerusakan
+              - recommended_actions: Rekomendasi tindakan
+    
+    Notes:
+        - Menggunakan HuggingFace BLIP model untuk analisis gambar
+        - Jika API key tidak tersedia, mengembalikan hasil demo
+        - Mendeteksi berbagai jenis bencana dari gambar
+    """
     data = request.get_json()
     image_data = data.get('image', '')
     
@@ -1126,7 +1463,21 @@ def assess_damage():
 
 
 def generate_demo_assessment():
-    """Generate a random demo assessment when API is not available"""
+    """
+    Menghasilkan penilaian demo acak ketika API tidak tersedia.
+    
+    Returns:
+        JSON: Penilaian kerusakan simulasi dengan:
+              - is_disaster: True
+              - disaster_type: Jenis bencana acak
+              - severity: Tingkat keparahan acak
+              - demo_mode: True (menandakan ini data demo)
+    
+    Notes:
+        - Menggunakan tipe bencana: banjir, kebakaran, earthquake
+        - Berguna untuk demonstrasi ketika API HuggingFace tidak dikonfigurasi
+    """
+    import random
     import random
     disasters = [
         {"type": "flood", "name": "Banjir", "severity": random.choice(["low", "medium", "high"])},
@@ -1154,6 +1505,159 @@ def generate_demo_assessment():
         "estimated_impact": disaster["severity"].capitalize() + " impact requiring response",
         "demo_mode": True
     })
+
+
+@app.route('/api/classify-disaster', methods=['POST'])
+def classify_disaster():
+    """
+    Klasifikasikan jenis bencana berdasarkan analisis warna HSV.
+    
+    Request Body:
+        JSON dengan field:
+        - image (str): Data gambar dalam format base64
+    
+    Returns:
+        JSON: Hasil klasifikasi meliputi:
+              - success: Status keberhasilan
+              - is_disaster: Apakah gambar menunjukkan bencana
+              - kategori_bencana: Jenis bencana (Kebakaran/Banjir/Erupsi Gunung Berapi/Tanah Longsor/Tidak Teridentifikasi)
+              - confidence_score: Tingkat kepercayaan
+              - warna_dominan: Persentase warna dominan
+              - reason: Alasan klasifikasi
+    
+    Notes:
+        - Menggunakan analisis warna HSV untuk klasifikasi
+        - Metode: Kebakaran, Banjir, Gunung Berapi, Tanah Longsor
+    """
+    data = request.get_json()
+    image_data = data.get('image', '')
+    
+    if not image_data:
+        return jsonify({
+            "success": False,
+            "error": "No image provided"
+        }), 400
+    
+    try:
+        # Import the disaster classifier
+        from disaster_classifier import classify_disaster
+        
+        # Perform hybrid classification
+        result = classify_disaster(image_data)
+        
+        # Map to frontend expected format
+        if result.get("success"):
+            disaster_type = result.get("kategori_bencana", "Tidak Teridentifikasi")
+            
+            # Map Indonesian disaster names to expected format
+            disaster_names = {
+                "Kebakaran": "Kebakaran",
+                "Banjir": "Banjir",
+                "Erupsi Gunung Berapi": "Gunung Berapi",
+                "Tanah Longsor": "Tanah Longsor",
+                "Tidak Teridentifikasi": None
+            }
+            
+            # Determine severity based on confidence
+            confidence_value = float(result.get("confidence_score", "0%").replace("%", ""))
+            severity = "low"
+            if confidence_value > 70:
+                severity = "high"
+            elif confidence_value > 40:
+                severity = "medium"
+            
+            # Build response
+            response = {
+                "success": True,
+                "is_disaster": result.get("is_disaster", False),
+                "disaster_type": disaster_names.get(disaster_type, disaster_type),
+                "confidence": confidence_value / 100,
+                "severity": severity if result.get("is_disaster") else None,
+                "damage_description": result.get("reason", ""),
+                "visual_evidence": result.get("reason", ""),
+                "reason": result.get("reason", ""),
+                "damage_type": disaster_type.lower().replace(" ", "_") if disaster_type else None,
+                "kategori_bencana": disaster_type,
+                "confidence_score": result.get("confidence_score", "0%"),
+                "warna_dominan": result.get("warna_dominan", {}),
+                "detail_analysis": result.get("detail_analysis", {}),
+                "estimated_impact": f"{severity.capitalize()} impact requiring response" if result.get("is_disaster") else "No disaster detected",
+                "affected_areas": ["area yang terdeteksi dari analisis warna"] if result.get("is_disaster") else [],
+                "recommended_actions": get_recommended_actions(disaster_type) if result.get("is_disaster") else ["Tidak ada tindakan diperlukan - gambar tidak terkait bencana"]
+            }
+            
+            return jsonify(response)
+        else:
+            return jsonify({
+                "success": False,
+                "error": result.get("error", "Gambar tidak dapat dianalisis"),
+                "is_disaster": False
+            })
+            
+    except ImportError as e:
+        print(f"Error importing disaster classifier: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Module analisis warna tidak tersedia",
+            "is_disaster": False
+        }), 500
+    except Exception as e:
+        import traceback
+        print(f"Error classifying disaster: {e}")
+        print(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "error": f"Terjadi kesalahan: {str(e)}",
+            "is_disaster": False
+        }), 500
+
+
+def get_recommended_actions(disaster_type: str) -> list:
+    """
+    Dapatkan rekomendasi tindakan berdasarkan jenis bencana.
+    
+    Args:
+        disaster_type: Jenis bencana (dalam Bahasa Indonesia)
+    
+    Returns:
+        List berisi rekomendasi tindakan
+    """
+    actions = {
+        "Kebakaran": [
+            "Evakuasi segera dari area terdampak",
+            "Hubungi pemadam kebakaran (113)",
+            "Matikan sumber api jika aman",
+            "Jauhi area dengan asap tebal"
+        ],
+        "Banjir": [
+            "Evakuasi ke tempat tinggi",
+            "Hindari genangan air",
+            "Siapkan barang berharga",
+            "Hubungi tim penyelamat (112)"
+        ],
+        "Erupsi Gunung Berapi": [
+            "Evakuasi segera dari zona berbahaya",
+            "Gunakan masker untuk避开 abu vulkanik",
+            "Tutup pintu dan jendela",
+            "Ikuti instruksi petugas"
+        ],
+        "Tanah Longsor": [
+            "Evakuasi segera dari area berpotensi longsor",
+            "Hindari lereng bukit",
+            "Perhatikan tanda-tanda retakan tanah",
+            "Hubungi petugas bencana"
+        ],
+        "Tidak Teridentifikasi": [
+            "Gambar tidak menunjukkan bencana yang jelas",
+            "Coba upload gambar dengan pencahayaan lebih baik",
+            "Pastikan bencana terlihat jelas dalam foto"
+        ]
+    }
+    
+    return actions.get(disaster_type, ["Ikuti petunjuk petugas bencana"])
+
+
+# ==================== Run App ====================
 
 
 # ==================== Run App ====================

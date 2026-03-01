@@ -1,3 +1,14 @@
+/**
+ * Komponen DamageUpload - Unggah dan оценка kerusakan
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Mengunggah gambar kerusakan bencana
+ * - Menggunakan AI untuk menilai kerusakan
+ * - Berinteraksi dengan API /api/assess-damage
+ * 
+ * Author: SiagaAI Team
+ */
+
 import { useState, useRef, useCallback } from 'react'
 
 function DamageUpload({ location = 'jakarta' }) {

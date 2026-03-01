@@ -1,3 +1,14 @@
+/**
+ * Komponen RiskAlert - Peringatan Risiko Bencana
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Menampilkan level risiko untuk kota yang dipilih
+ * - Berinteraksi dengan API /api/risk
+ * - Menampilkan rekomendasi tindakan
+ * 
+ * Author: SiagaAI Team
+ */
+
 import { useState, useEffect, useCallback } from 'react'
 
 function RiskAlert({ location = 'jakarta' }) {

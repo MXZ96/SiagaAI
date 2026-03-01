@@ -1,3 +1,14 @@
+/**
+ * Halaman AdminLogin - Login Admin
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Halaman login untuk admin
+ * - Menggunakan autentikasi sederhana
+ * - Redirect ke dashboard setelah login
+ * 
+ * Author: SiagaAI Team
+ */
+
 import { useState, useEffect } from 'react'
 
 export default function AdminLogin() {

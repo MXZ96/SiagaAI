@@ -1,3 +1,22 @@
+/**
+ * Stylesheet Utama Aplikasi SiagaAI
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Menggunakan Tailwind CSS untuk styling
+ * - Font: Inter untuk body, Poppins untuk heading
+ * - Tema: Dark mode dengan warna primer dan danger
+ * 
+ * Struktur:
+ * 1. Import font dari Google Fonts
+ * 2. Tailwind directives (@tailwind)
+ * 3. Base styles (@layer base)
+ * 4. Komponen reusable (@layer components)
+ * 5. Custom scrollbar
+ * 6. Override untuk Leaflet (peta)
+ * 
+ * Author: SiagaAI Team
+ */
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
@@ -5,25 +24,30 @@
 @tailwind utilities;
 
 @layer base {
+  /* Style dasar untuk body */
   body {
     @apply bg-dark-bg text-dark-text font-sans antialiased;
     font-family: 'Inter', system-ui, sans-serif;
   }
 
+  /* Font untuk heading */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Poppins', system-ui, sans-serif;
   }
 }
 
 @layer components {
+  /* Efek kaca (glassmorphism) */
   .glass {
     @apply bg-dark-card/80 backdrop-blur-lg border border-dark-border;
   }
   
+  /* Kartu dengan efek kaca */
   .glass-card {
     @apply bg-dark-card/60 backdrop-blur-xl border border-white/10 rounded-2xl;
   }
 
+  /* Tombol utama (primary) */
   .btn-primary {
     @apply bg-gradient-to-r from-primary-500 to-primary-600 text-white px-6 py-3 rounded-xl font-semibold 
            hover:from-primary-600 hover:to-primary-700 transition-all duration-300
@@ -31,36 +55,43 @@
            shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40;
   }
   
+  /* Tombol danger (bahaya) */
   .btn-danger {
     @apply bg-gradient-to-r from-danger-500 to-danger-600 text-white px-6 py-3 rounded-xl font-semibold
            hover:from-danger-600 hover:to-danger-700 transition-all duration-300
            shadow-lg shadow-danger-500/25 hover:shadow-danger-500/40;
   }
   
+  /* Tombol success (berhasil) */
   .btn-success {
     @apply bg-gradient-to-r from-success-500 to-success-600 text-white px-6 py-3 rounded-xl font-semibold
            hover:from-success-600 hover:to-success-700 transition-all duration-300
            shadow-lg shadow-success-500/25 hover:shadow-success-500/40;
   }
   
+  /* Kartu standar */
   .card {
     @apply bg-dark-card rounded-2xl p-6 border border-dark-border;
   }
 
+  /* Input field standar */
   .input-field {
     @apply w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-xl
            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
            placeholder:text-dark-muted text-dark-text transition-all;
   }
 
+  /* Teks dengan gradient */
   .gradient-text {
     @apply bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600 bg-clip-text text-transparent;
   }
 
+  /* Animasi glow */
   .animate-glow {
     animation: glow 2s ease-in-out infinite alternate;
   }
 
+  /* Definisi animasi glow */
   @keyframes glow {
     from {
       box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);

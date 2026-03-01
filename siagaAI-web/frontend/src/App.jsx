@@ -1,3 +1,22 @@
+/**
+ * Komponen Utama Aplikasi SiagaAI
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Aplikasi utama yang menangani routing dan navigasi
+ * - Mengelola state untuk lokasi, halaman saat ini, dan chatbot
+ * - Menyediakan header dengan selector kota
+ * - Mengintegrasikan komponen: RiskAlert, Chatbot, DamageUpload
+ * - Menangani halaman: Home, Dashboard, AdminLogin, AdminDashboard
+ * 
+ * State:
+ * - currentPage: Halaman yang sedang aktif ('home', 'dashboard', 'admin-login', 'admin-dashboard')
+ * - location: Kota yang dipilih (default: 'jakarta')
+ * - showChatbot: Status tampilan chatbot
+ * - cities: Daftar kota yang tersedia
+ * 
+ * Author: SiagaAI Team
+ */
+
 import { useState, useEffect, useCallback } from 'react'
 import RiskAlert from './components/RiskAlert'
 import Chatbot from './components/Chatbot'
@@ -7,14 +26,21 @@ import Home from './pages/Home'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
 
-// App content
+// App content - Komponen utama aplikasi
 function AppContent() {
+  // State untuk menyimpan halaman saat ini
   const [currentPage, setCurrentPage] = useState('home')
+  
+  // State untuk menyimpan lokasi/kota yang dipilih
   const [location, setLocation] = useState('jakarta')
+  
+  // State untuk menampilkan/sembunyikan chatbot
   const [showChatbot, setShowChatbot] = useState(false)
+  
+  // State untuk menyimpan daftar kota
   const [cities, setCities] = useState([])
 
-  // Fetch cities list
+  // Mengambil daftar kota saat komponen mount
   useEffect(() => {
     fetch('/api/cities')
       .then(res => res.json())
@@ -24,10 +50,11 @@ function AppContent() {
       .catch(console.error)
   }, [])
 
-  // Check for admin pages on mount and hash change
+  // Memeriksa perubahan hash URL untuk navigasi admin
   useEffect(() => {
     const checkHash = () => {
       const hash = window.location.hash
+      // Jika hash adalah #/admin-login, tampilkan halaman login admin
       if (hash === '#/admin-login') {
         setCurrentPage('admin-login')
       } else if (hash === '#/admin-dashboard') {
@@ -36,20 +63,23 @@ function AppContent() {
     }
     
     checkHash()
+    // Dengarkan perubahan hash
     window.addEventListener('hashchange', checkHash)
     return () => window.removeEventListener('hashchange', checkHash)
   }, [])
 
+  // Callback untuk mengubah lokasi
   const handleLocationChange = useCallback((newLocation) => {
     setLocation(newLocation)
   }, [])
 
+  // Fungsi untuk menavigasi ke halaman tertentu
   const navigateTo = (page) => {
     console.log('Navigating to:', page)
     setCurrentPage(page)
     setShowChatbot(false)
     
-    // Update hash for direct linking
+    // Update hash untuk direct linking
     if (page === 'admin-login') {
       window.location.hash = '#/admin-login'
     } else if (page === 'admin-dashboard') {
@@ -228,8 +258,9 @@ function AppContent() {
   )
 }
 
-// Main App
+// Main App - Komponen utama yang diekspor
 function App() {
+  // Merender AppContent yang berisi logika utama
   return (
     <AppContent />
   )

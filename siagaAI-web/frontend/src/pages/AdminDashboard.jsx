@@ -1,3 +1,15 @@
+/**
+ * Halaman AdminDashboard - Dashboard Admin
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Dashboard untuk admin mengelola laporan
+ * - Menampilkan statistik dan laporan kerusakan
+ * - Include fungsi approve, reject, delete laporan
+ * - Menggunakan API /api/admin/*
+ * 
+ * Author: SiagaAI Team
+ */
+
 import { useState, useEffect } from 'react'
 
 export default function AdminDashboard() {

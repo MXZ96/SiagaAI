@@ -1,5 +1,17 @@
 /**
- * ErrorBoundary - Catch React errors and display fallback UI
+ * ErrorBoundary - Komponen untuk menangkap error React
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Menangkap error pada komponen anak
+ * - Menampilkan UI fallback saat terjadi error
+ * - Menyediakan tombol untuk retry
+ * 
+ * usage:
+ * <ErrorBoundary>
+ *   <KomponenYang MungkinError />
+ * </ErrorBoundary>
+ * 
+ * Author: SiagaAI Team
  */
 
 import { Component } from 'react';
@@ -68,7 +80,12 @@ export default class ErrorBoundary extends Component {
 }
 
 /**
- * ErrorMessage - Simple error display component
+ * ErrorMessage - Komponen pesan error sederhana
+ * 
+ * Props:
+ * - message: Pesan error yang ditampilkan
+ * - onRetry: Callback untuk tombol retry
+ * - className: Kelas CSS tambahan
  */
 export function ErrorMessage({ 
   message = 'Terjadi kesalahan', 
@@ -96,7 +113,14 @@ export function ErrorMessage({
 }
 
 /**
- * EmptyState - Display when no data available
+ * EmptyState - Komponen untuk menampilkan keadaan kosong
+ * 
+ * Props:
+ * - icon: Ikon yang ditampilkan (default: 📭)
+ * - title: Judul pesan
+ * - message: Deskripsi pesan
+ * - action: Tombol/action tambahan
+ * - className: Kelas CSS tambahan
  */
 export function EmptyState({ 
   icon = '📭',

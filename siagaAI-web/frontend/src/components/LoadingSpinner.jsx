@@ -1,5 +1,15 @@
 /**
- * LoadingSpinner - Reusable loading indicator
+ * LoadingSpinner - Indikator loading yang bisa digunakan ulang
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Menampilkan animasi loading spinner
+ * - Ukuran dapat disesuaikan (sm, md, lg, xl)
+ * 
+ * Props:
+ * - size: Ukuran spinner ('sm', 'md', 'lg', 'xl')
+ * - text: Teks yang ditampilkan (default: 'Memuat...')
+ * 
+ * Author: SiagaAI Team
  */
 
 export default function LoadingSpinner({ size = 'md', text = 'Memuat...' }) {
@@ -19,7 +29,11 @@ export default function LoadingSpinner({ size = 'md', text = 'Memuat...' }) {
 }
 
 /**
- * LoadingOverlay - Full screen loading
+ * LoadingOverlay - Loading layar penuh
+ * 
+ * Props:
+ * - isLoading: Status visibility
+ * - text: Teks yang ditampilkan
  */
 export function LoadingOverlay({ isLoading, text = 'Memuat...' }) {
   if (!isLoading) return null;
@@ -35,7 +49,10 @@ export function LoadingOverlay({ isLoading, text = 'Memuat...' }) {
 }
 
 /**
- * PageLoader - Full page loading state
+ * PageLoader - Status loading halaman penuh
+ * 
+ * Props:
+ * - text: Teks yang ditampilkan (default: 'Memuat halaman...')
  */
 export function PageLoader({ text = 'Memuat halaman...' }) {
   return (

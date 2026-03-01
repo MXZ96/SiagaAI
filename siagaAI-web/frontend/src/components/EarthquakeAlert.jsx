@@ -1,3 +1,14 @@
+/**
+ * Komponen EarthquakeAlert - Info Gempa Bumi
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Menampilkan informasi earthquake terbaru
+ * - Berinteraksi dengan API /api/earthquake
+ * - Menampilkan magnitude, lokasi, dan waktu
+ * 
+ * Author: SiagaAI Team
+ */
+
 import { useState, useEffect } from 'react'
 
 function EarthquakeAlert() {

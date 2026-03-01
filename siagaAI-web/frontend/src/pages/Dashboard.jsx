@@ -1,3 +1,15 @@
+/**
+ * Halaman Dashboard - Dashboard Data Bencana
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Menampilkan data lengkap bencana dan risiko
+ * - Include peta interaktif dengan Leaflet
+ * - Menampilkan zone risiko dan titik evakuasi
+ * - Include statistik dan cuaca
+ * 
+ * Author: SiagaAI Team
+ */
+
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 
 function Dashboard({ location, cities = [], onLocationChange }) {

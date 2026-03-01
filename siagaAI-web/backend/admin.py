@@ -1,5 +1,13 @@
 """
-Admin API Module - Admin dashboard endpoints
+Modul API Admin - Endpoint untuk dashboard admin
+
+Dokumentasi Bahasa Indonesia:
+- Modul ini menyediakan endpoint-endpoint untuk administrasi
+- Memerlukan X-Admin-Secret header untuk autentikasi
+- Mengelola laporan kerusakan dan data user
+
+Author: SiagaAI Team
+Version: 1.0.0
 """
 
 import os
@@ -18,6 +26,7 @@ MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb+srv://editormxz_db_user:WQC796PG
 MONGODB_DB_NAME = 'siagaAI'
 
 # Initialize MongoDB
+# Konfigurasi MongoDB - hanya untuk reports
 try:
     mongo_client = pymongo.MongoClient(
         MONGODB_URI,
@@ -31,7 +40,8 @@ try:
     mongo_client.admin.command('ping')
     db = mongo_client[MONGODB_DB_NAME]
     reports_collection = db.reports
-    users_collection = db.users
+    # CATATAN: users_collection dihapus - tidak ada sistem user
+    users_collection = None
 except Exception as e:
     print(f"Admin MongoDB connection error: {e}")
     mongo_client = None
@@ -43,7 +53,20 @@ except Exception as e:
 ADMIN_SECRET = os.getenv('ADMIN_SECRET', 'siagaAI-admin-2024-secret')
 
 def admin_required(f):
-    """Decorator to require admin authentication"""
+    """
+    Decorator untuk memproteksi endpoint admin.
+    
+    Usage:
+        @app.route('/admin/protected')
+        @admin_required
+        def admin_protected_route():
+            return jsonify({'message': 'Admin authorized'})
+    
+    Notes:
+        - Memeriksa header X-Admin-Secret
+        - SECRET didefinisikan di environment variable ADMIN_SECRET
+        - Jika secret tidak cocok, mengembalikan 401 Unauthorized
+    """
     @wraps(f)
     def decorated(*args, **kwargs):
         # Check admin secret header
@@ -58,12 +81,44 @@ def admin_required(f):
 
 
 def register_admin_routes(app):
-    """Register admin routes with Flask app"""
+    """
+    Mendaftarkan route-route admin ke aplikasi Flask.
+    
+    Endpoint yang didaftarkan:
+        - GET /api/admin/reports - Ambil semua laporan
+        - POST /api/admin/reports/<id>/approve - Setuju laporan
+        - POST /api/admin/reports/<id>/reject - Tolak laporan
+        - DELETE /api/admin/reports/<id> - Hapus laporan
+        - GET /api/admin/reports/<id> - Ambil satu laporan
+        - GET /api/admin/users - Ambil semua user
+        - GET /api/admin/stats - Ambil statistik keseluruhan
+    
+    Args:
+        app: Instance aplikasi Flask
+    """
+    app
     
     @app.route('/api/admin/reports', methods=['GET'])
     @admin_required
     def get_admin_reports():
-        """Get all reports for admin"""
+        """
+        Mengambil semua laporan untuk admin.
+        
+        Query Parameters:
+            status (str): Filter berdasarkan status (pending/approved/rejected/all)
+        
+        Returns:
+            JSON: Dictionary dengan:
+                  - reports: Daftar laporan
+                  - pending_count: Jumlah laporan pending
+                  - approved_count: Jumlah laporan disetujui
+                  - rejected_count: Jumlah laporan ditolak
+        
+        Notes:
+            - Memerlukan X-Admin-Secret header
+            - Mengembalikan 100 laporan terbaru
+        """
+        # Check if database is connected
         if reports_collection is None:
             return jsonify({'error': 'Database not connected', 'reports': [], 'pending_count': 0, 'approved_count': 0, 'rejected_count': 0}), 200
         
@@ -111,7 +166,21 @@ def register_admin_routes(app):
     @app.route('/api/admin/reports/<report_id>/approve', methods=['POST'])
     @admin_required
     def approve_report(report_id):
-        """Approve a report"""
+        """
+        Menyetuju sebuah laporan.
+        
+        Args:
+            report_id (str): ID laporan di MongoDB
+        
+        Returns:
+            JSON: Success=True jika berhasil
+            JSON: Error jika laporan tidak ditemukan
+        
+        Notes:
+            - Mengubah status laporan menjadi 'approved'
+            - Menambahkan timestamp updated_at
+        """
+        # Check database connection
         if reports_collection is None:
             return jsonify({'error': 'Database not connected'}), 500
         
@@ -132,7 +201,21 @@ def register_admin_routes(app):
     @app.route('/api/admin/reports/<report_id>/reject', methods=['POST'])
     @admin_required
     def reject_report(report_id):
-        """Reject a report"""
+        """
+        Menolak sebuah laporan.
+        
+        Args:
+            report_id (str): ID laporan di MongoDB
+        
+        Returns:
+            JSON: Success=True jika berhasil
+            JSON: Error jika laporan tidak ditemukan
+        
+        Notes:
+            - Mengubah status laporan menjadi 'rejected'
+            - Menambahkan timestamp updated_at
+        """
+        # Check database connection
         if reports_collection is None:
             return jsonify({'error': 'Database not connected'}), 500
         
@@ -153,7 +236,20 @@ def register_admin_routes(app):
     @app.route('/api/admin/reports/<report_id>', methods=['DELETE'])
     @admin_required
     def delete_report(report_id):
-        """Delete a report"""
+        """
+        Menghapus sebuah laporan.
+        
+        Args:
+            report_id (str): ID laporan di MongoDB
+        
+        Returns:
+            JSON: Success=True jika berhasil dihapus
+            JSON: Error jika laporan tidak ditemukan
+        
+        Notes:
+            - Menghapus permanen laporan dari database
+        """
+        # Check database connection
         if reports_collection is None:
             return jsonify({'error': 'Database not connected'}), 500
         
@@ -171,7 +267,17 @@ def register_admin_routes(app):
     @app.route('/api/admin/reports/<report_id>', methods=['GET'])
     @admin_required
     def get_report(report_id):
-        """Get a single report by ID"""
+        """
+        Mengambil satu laporan berdasarkan ID.
+        
+        Args:
+            report_id (str): ID laporan di MongoDB
+        
+        Returns:
+            JSON: Data laporan lengkap
+            JSON: Error jika laporan tidak ditemukan
+        """
+        # Check database connection
         if reports_collection is None:
             return jsonify({'error': 'Database not connected'}), 500
         
@@ -190,32 +296,43 @@ def register_admin_routes(app):
     @app.route('/api/admin/users', methods=['GET'])
     @admin_required
     def get_users():
-        """Get all users (admin only)"""
-        if users_collection is None:
-            return jsonify({'error': 'Database not connected'}), 500
+        """
+        Mengambil semua user (tidak digunakan - hanya ada admin).
         
-        try:
-            users = list(users_collection.find({}, {'google_id': 0}).sort('created_at', -1).limit(100))
-            
-            # Convert ObjectId to string
-            for user in users:
-                user['_id'] = str(user['_id'])
-            
-            total_users = users_collection.count_documents({})
-            
-            return jsonify({
-                'users': users,
-                'total_count': total_users
-            }), 200
-            
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
+        Returns:
+            JSON: Pesan bahwa tidak ada sistem user
+        
+        Notes:
+            - Aplikasi ini tidak memiliki sistem user
+            - Hanya admin yang bisa mengakses dashboard
+        """
+        # Tidak ada sistem user - hanya admin
+        return jsonify({
+            'users': [],
+            'total_count': 0,
+            'message': 'Tidak ada sistem user - hanya admin yang ada'
+        }), 200
     
     @app.route('/api/admin/stats', methods=['GET'])
     @admin_required
     def get_admin_stats():
-        """Get overall statistics"""
-        if reports_collection is None or users_collection is None:
+        """
+        Mengambil statistik keseluruhan platform.
+        
+        Returns:
+            JSON: Statistik meliputi:
+                  - total_reports: Total semua laporan
+                  - pending_reports: Laporan pending
+                  - approved_reports: Laporan disetujui
+                  - rejected_reports: Laporan ditolak
+                  - total_users: Selalu 1 (hanya admin)
+        
+        Notes:
+            - Berguna untuk dashboard admin
+            - Memberikan gambaran umum aktivitas platform
+        """
+        # Check database connection
+        if reports_collection is None:
             return jsonify({'error': 'Database not connected'}), 500
         
         try:
@@ -223,14 +340,13 @@ def register_admin_routes(app):
             pending_reports = reports_collection.count_documents({'status': 'pending'})
             approved_reports = reports_collection.count_documents({'status': 'approved'})
             rejected_reports = reports_collection.count_documents({'status': 'rejected'})
-            total_users = users_collection.count_documents({})
             
             return jsonify({
                 'total_reports': total_reports,
                 'pending_reports': pending_reports,
                 'approved_reports': approved_reports,
                 'rejected_reports': rejected_reports,
-                'total_users': total_users
+                'total_users': 1  # Hanya admin
             }), 200
             
         except Exception as e:

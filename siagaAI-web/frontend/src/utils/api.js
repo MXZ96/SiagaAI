@@ -1,11 +1,33 @@
 /**
- * API Utility - Enhanced fetch with retry logic and error handling
+ * Utilitas API - Fetch dengan logika retry dan penanganan error
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Menyediakan fungsi untuk request API
+ * - Include retry logic untuk network error
+ * - Include exponential backoff
+ * - Include timeout handling
+ * 
+ * Fungsi:
+ * - fetchWithRetry: Fetch dengan retry
+ * - apiGet: GET request
+ * - apiPost: POST request
+ * - apiPut: PUT request
+ * - apiDelete: DELETE request
+ * - useApi: React hook untuk API calls
+ * 
+ * Author: SiagaAI Team
  */
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 /**
- * Fetch with retry logic
+ * Fetch dengan logika retry
+ * 
+ * Args:
+ * - url: URL yang akan di-fetch
+ * - options: Opsi fetch
+ * - maxRetries: Maksimum percobaan (default: 3)
+ * - retryDelay: Delay antar retry dalam ms (default: 1000)
  */
 export async function fetchWithRetry(url, options = {}, maxRetries = 3, retryDelay = 1000) {
   const { retryOptions = {}, ...fetchOptions } = options;
@@ -52,14 +74,14 @@ export async function fetchWithRetry(url, options = {}, maxRetries = 3, retryDel
 }
 
 /**
- * Delay helper
+ * Helper fungsi delay
  */
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
- * API GET request with error handling
+ * Request GET dengan penanganan error
  */
 export async function apiGet(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -87,7 +109,7 @@ export async function apiGet(endpoint, options = {}) {
 }
 
 /**
- * API POST request with error handling
+ * Request POST dengan penanganan error
  */
 export async function apiPost(endpoint, data, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -116,7 +138,7 @@ export async function apiPost(endpoint, data, options = {}) {
 }
 
 /**
- * API PUT request
+ * Request PUT
  */
 export async function apiPut(endpoint, data, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -145,7 +167,7 @@ export async function apiPut(endpoint, data, options = {}) {
 }
 
 /**
- * API DELETE request
+ * Request DELETE
  */
 export async function apiDelete(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -173,7 +195,7 @@ export async function apiDelete(endpoint, options = {}) {
 }
 
 /**
- * Hook for API calls with loading and error states
+ * Hook untuk API calls dengan state loading dan error
  */
 import { useState, useCallback } from 'react';
 

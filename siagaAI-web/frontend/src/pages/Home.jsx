@@ -1,3 +1,14 @@
+/**
+ * Halaman Home - Halaman Utama SiagaAI
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Halaman utama aplikasi
+ * - Menampilkan RiskAlert, EarthquakeAlert, EarlyWarning
+ * - Menggunakan state untuk lokasi dan komponen
+ * 
+ * Author: SiagaAI Team
+ */
+
 import RiskAlert from '../components/RiskAlert'
 import EarthquakeAlert from '../components/EarthquakeAlert'
 import EarlyWarning from '../components/EarlyWarning'

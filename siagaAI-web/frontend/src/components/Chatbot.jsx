@@ -1,3 +1,23 @@
+/**
+ * Komponen Chatbot - Asisten Virtual SiagaAI
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Chatbot untuk pertanyaan tanggap darurat
+ * - Berinteraksi dengan API /api/chat
+ * - Menampilkan pesan dalam UI yang interaktif
+ * 
+ * Props:
+ * - location: ID kota yang dipilih (default: 'jakarta')
+ * - onClose: Callback untuk menutup chatbot
+ * 
+ * State:
+ * - messages: Array pesan
+ * - inputMessage: Input pengguna
+ * - isLoading: Status loading
+ * 
+ * Author: SiagaAI Team
+ */
+
 import { useState, useRef, useEffect } from 'react'
 
 function Chatbot({ location = 'jakarta', onClose }) {

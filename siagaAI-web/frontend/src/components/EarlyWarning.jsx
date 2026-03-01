@@ -1,3 +1,14 @@
+/**
+ * Komponen EarlyWarning - Peringatan Dini BMKG
+ * 
+ * Dokumentasi Bahasa Indonesia:
+ * - Menampilkan peringatan dini dari BMKG
+ * - Berinteraksi dengan API /api/early-warnings
+ * - Menampilkan dalam bentuk cards/tabs
+ * 
+ * Author: SiagaAI Team
+ */
+
 import { useState, useEffect } from 'react'
 
 function EarlyWarning() {
