@@ -898,29 +898,122 @@ def create_report():
 
 @app.route('/api/assess-damage', methods=['POST'])
 def assess_damage():
-    """Assess damage from uploaded image"""
+    """Assess damage from uploaded image using Gemini AI"""
     data = request.get_json()
+    image_data = data.get('image', '')
     
-    # Mock damage assessment - in production, this would use AI/ML
-    # For now, return a simulated assessment based on random factors
-    import random
+    if not image_data:
+        return jsonify({
+            "success": False,
+            "error": "No image provided"
+        }), 400
     
-    severities = ['low', 'medium', 'high', 'critical']
-    damage_types = ['structural', 'flood', 'fire', 'other']
-    
-    # Simulate analysis delay
-    return jsonify({
-        "success": True,
-        "severity": random.choice(severities),
-        "damage_type": random.choice(damage_types),
-        "confidence": round(random.uniform(0.7, 0.95), 2),
-        "description": "Damage assessment completed. Please provide additional details about the damage.",
-        "recommended_actions": [
-            "Take photos from multiple angles",
-            "Ensure personal safety",
-            "Contact local authorities if critical"
-        ]
-    })
+    try:
+        import google.generativeai as genai
+        
+        # Configure Gemini API
+        GEMINI_API_KEY = "AIzaSyCbgl8hIPysCv0dmlmU-aeydX4OUBrvYq8"
+        genai.configure(api_key=GEMINI_API_KEY)
+        
+        # Use gemini-1.5-flash for faster response
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Step 1: Check if image is a disaster
+        disaster_check_prompt = """Analyze this image and determine if it shows a natural disaster or emergency situation.
+        
+        Disaster types to look for:
+        - Banjir (Flood)
+        - Gempa Bumi (Earthquake)
+        - Tanah Longsor (Landslide)
+        - Kebakaran (Fire)
+        - Badai/Angin Kuat (Storm/Strong Wind)
+        - Tsunami
+        - Erupsi Gunung Berapi (Volcanic Eruption)
+        - Kerusakan Struktur Gedung/Rumah (Building/ House Damage)
+        
+        Respond ONLY with this exact JSON format (no other text):
+        {
+            "is_disaster": true or false,
+            "disaster_type": "specific type or null",
+            "confidence": 0.0 to 1.0,
+            "reason": "brief explanation"
+        }"""
+        
+        # Create the content with image
+        contents = [disaster_check_prompt, image_data]
+        
+        response = model.generate_content(contents)
+        
+        # Parse the response
+        import re
+        import json
+        
+        # Extract JSON from response
+        response_text = response.text
+        json_match = re.search(r'\{[^{}]*\}', response_text, re.DOTALL)
+        
+        if json_match:
+            disaster_result = json.loads(json_match.group())
+        else:
+            # Try to parse the whole response
+            disaster_result = json.loads(response_text)
+        
+        # Step 2: If not a disaster, reject the upload
+        if not disaster_result.get('is_disaster', False):
+            return jsonify({
+                "success": False,
+                "error": "Gambar yang Anda upload bukan foto bencana alam. Hanya foto bencana alam yang diperbolehkan untuk diupload.",
+                "disaster_type": None,
+                "is_disaster": False
+            }), 400
+        
+        # Step 3: If it is a disaster, analyze the damage
+        damage_analysis_prompt = f"""Analyze this disaster image and provide detailed damage assessment.
+        
+        Disaster Type: {disaster_result.get('disaster_type', 'Unknown')}
+        
+        Provide damage assessment in this exact JSON format:
+        {{
+            "severity": "low" or "medium" or "high" or "critical",
+            "damage_description": "detailed description of visible damage",
+            "affected_areas": ["list of affected areas/structures"],
+            "recommended_actions": ["actionable recommendations"],
+            "estimated_impact": "brief impact assessment"
+        }}"""
+        
+        damage_contents = [damage_analysis_prompt, image_data]
+        damage_response = model.generate_content(damage_contents)
+        
+        # Parse damage response
+        damage_text = damage_response.text
+        damage_json_match = re.search(r'\{[^{}]*\}', damage_text, re.DOTALL)
+        
+        if damage_json_match:
+            damage_result = json.loads(damage_json_match.group())
+        else:
+            damage_result = json.loads(damage_text)
+        
+        # Return success with both results
+        return jsonify({
+            "success": True,
+            "is_disaster": True,
+            "disaster_type": disaster_result.get('disaster_type'),
+            "disaster_confidence": disaster_result.get('confidence', 0),
+            "severity": damage_result.get('severity', 'medium'),
+            "damage_type": disaster_result.get('disaster_type'),
+            "damage_description": damage_result.get('damage_description', ''),
+            "affected_areas": damage_result.get('affected_areas', []),
+            "recommended_actions": damage_result.get('recommended_actions', []),
+            "estimated_impact": damage_result.get('estimated_impact', ''),
+            "confidence": disaster_result.get('confidence', 0.8)
+        })
+        
+    except Exception as e:
+        print(f"Error analyzing image with Gemini: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"Error analyzing image: {str(e)}"
+        }), 500
 
 # ==================== Run App ====================
 

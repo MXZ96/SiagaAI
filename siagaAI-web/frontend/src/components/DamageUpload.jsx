@@ -14,11 +14,9 @@ function DamageUpload({ location = 'jakarta' }) {
 
   const analyzeImage = useCallback(async (imageData) => {
     setIsAnalyzing(true)
+    setResult(null)
     
     try {
-      // Simulate image processing
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
       // Use backend API for assessment
       const response = await fetch('/api/assess-damage', {
         method: 'POST',
@@ -31,9 +29,35 @@ function DamageUpload({ location = 'jakarta' }) {
       })
       
       const data = await response.json()
-      setResult(data)
+      
+      // Handle error response (not a disaster image)
+      if (!data.success) {
+        setResult({
+          success: false,
+          error: data.error || 'Gambar tidak dapat dianalisis',
+          is_disaster: false
+        })
+        return
+      }
+      
+      // Success - disaster image detected
+      setResult({
+        success: true,
+        is_disaster: true,
+        disaster_type: data.disaster_type,
+        severity: data.severity,
+        damage_description: data.damage_description,
+        affected_areas: data.affected_areas,
+        recommended_actions: data.recommended_actions,
+        estimated_impact: data.estimated_impact,
+        confidence: data.confidence
+      })
     } catch (error) {
       console.error('Error analyzing image:', error)
+      setResult({
+        success: false,
+        error: 'Terjadi kesalahan saat menganalisis gambar'
+      })
     }
     
     setIsAnalyzing(false)
@@ -59,7 +83,8 @@ function DamageUpload({ location = 'jakarta' }) {
   }
 
   const handleSubmit = async () => {
-    if (!result || !description) return
+    // Only allow submission if it's a valid disaster image
+    if (!result || !result.success || !result.is_disaster || !description) return
 
     setIsSubmitting(true)
     
@@ -213,37 +238,89 @@ function DamageUpload({ location = 'jakarta' }) {
               <span className="gradient-text">Hasil Analisis AI</span>
             </h3>
             
-            <div className="flex items-center justify-between mb-6 p-4 bg-dark-card rounded-xl border border-dark-border">
-              <div className="flex items-center space-x-4">
-                <span className="text-4xl">{getSeverityIcon(result.severity)}</span>
-                <div>
-                  <p className="font-bold text-lg text-white capitalize">Tingkat Kerusakan: {result.severity}</p>
-                  <p className="text-dark-muted text-sm">{result.description}</p>
+            {/* Error - Not a disaster image */}
+            {!result.success ? (
+              <div className="p-6 bg-danger-500/10 border border-danger-500 rounded-xl text-center">
+                <div className="text-5xl mb-4">❌</div>
+                <h4 className="text-danger-400 font-bold text-lg mb-2">Gambar Tidak Valid</h4>
+                <p className="text-dark-muted">{result.error}</p>
+                <button
+                  onClick={() => {
+                    setPreview(null)
+                    setImage(null)
+                    setResult(null)
+                  }}
+                  className="mt-4 btn-secondary"
+                >
+                  Upload Foto Lain
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Disaster Type */}
+                <div className="flex items-center justify-between mb-6 p-4 bg-dark-card rounded-xl border border-danger-500/30">
+                  <div className="flex items-center space-x-4">
+                    <span className="text-4xl">🚨</span>
+                    <div>
+                      <p className="font-bold text-lg text-white capitalize">
+                        Jenis Bencana: {result.disaster_type}
+                      </p>
+                      <p className="text-dark-muted text-sm">{result.damage_description}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <p className="text-dark-muted text-xs">Confidence</p>
-                <p className="text-2xl font-bold text-primary-400">{(result.confidence * 100).toFixed(0)}%</p>
-              </div>
-            </div>
 
-            {/* Recommendations */}
-            <div className="bg-dark-card rounded-xl p-4 mb-6 border border-dark-border">
-              <p className="text-sm font-semibold text-white mb-3 flex items-center">
-                <span className="mr-2">💡</span> Rekomendasi
-              </p>
-              <ul className="text-sm text-dark-muted space-y-2">
-                {result.recommendations?.map((rec, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="mr-2 text-primary-400">•</span>
-                    {rec}
-                  </li>
-                ))}
-              </ul>
-            </div>
+                {/* Severity */}
+                <div className="flex items-center justify-between mb-6 p-4 bg-dark-card rounded-xl border border-dark-border">
+                  <div className="flex items-center space-x-4">
+                    <span className="text-4xl">{getSeverityIcon(result.severity)}</span>
+                    <div>
+                      <p className="font-bold text-lg text-white capitalize">Tingkat Kerusakan: {result.severity}</p>
+                      <p className="text-dark-muted text-sm">{result.estimated_impact}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-dark-muted text-xs">Confidence</p>
+                    <p className="text-2xl font-bold text-primary-400">{((result.confidence || 0) * 100).toFixed(0)}%</p>
+                  </div>
+                </div>
 
-            {/* Reporter Info */}
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Affected Areas */}
+                {result.affected_areas && result.affected_areas.length > 0 && (
+                  <div className="bg-dark-card rounded-xl p-4 mb-6 border border-dark-border">
+                    <p className="text-sm font-semibold text-white mb-3 flex items-center">
+                      <span className="mr-2">🏚️</span> Area Terdampak
+                    </p>
+                    <ul className="text-sm text-dark-muted space-y-2">
+                      {result.affected_areas.map((area, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="mr-2 text-danger-400">•</span>
+                          {area}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                {result.recommended_actions && result.recommended_actions.length > 0 && (
+                  <div className="bg-dark-card rounded-xl p-4 mb-6 border border-dark-border">
+                    <p className="text-sm font-semibold text-white mb-3 flex items-center">
+                      <span className="mr-2">💡</span> Rekomendasi
+                    </p>
+                    <ul className="text-sm text-dark-muted space-y-2">
+                      {result.recommended_actions.map((rec, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="mr-2 text-primary-400">•</span>
+                          {rec}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Reporter Info */}
+                <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-white mb-2">
                   👤 Nama Pelapor
@@ -287,7 +364,7 @@ function DamageUpload({ location = 'jakarta' }) {
             {/* Submit Button */}
             <button
               onClick={handleSubmit}
-              disabled={!description || isSubmitting}
+              disabled={!description || isSubmitting || !result?.is_disaster}
               className="w-full btn-success flex items-center justify-center space-x-3 py-4"
             >
               {isSubmitting ? (
@@ -307,6 +384,8 @@ function DamageUpload({ location = 'jakarta' }) {
                 </>
               )}
             </button>
+            </>
+            )}
           </div>
         )}
 
