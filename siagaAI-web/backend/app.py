@@ -909,73 +909,87 @@ def assess_damage():
         }), 400
     
     try:
-        import google.generativeai as genai
+        import requests
         import base64
-        import io
+        import json
         
-        # Configure Gemini API
-        GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', 'AIzaSyCLPAGL0auXjTWPpbSW0BfsTOybLKyeIZw')
-        genai.configure(api_key=GEMINI_API_KEY)
-        
-        # Use gemini-2.5-flash-image for image analysis
-        model = genai.GenerativeModel('gemini-2.5-flash-image')
+        # Configure HuggingFace API (use environment variable to avoid exposing key in code)
+        HF_API_KEY = os.environ.get('HF_API_KEY')
         
         # Extract image from base64 data URL if needed
         if ',' in image_data:
             # Format: data:image/jpeg;base64,XXXXX
             image_data = image_data.split(',')[1]
         
-        # Create image part
-        image_part = {
-            'mime_type': 'image/jpeg',
-            'data': base64.b64decode(image_data)
-        }
+        # Decode base64 image
+        image_bytes = base64.b64decode(image_data)
         
-        # Step 1: Check if image is a disaster
-        disaster_check_prompt = """Analyze this image and determine if it shows a natural disaster or emergency situation.
+        # Use HuggingFace's image captioning model
+        # This model generates descriptions of images
+        API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
+        headers = {"Authorization": f"Bearer {HF_API_KEY}"}
         
-        Disaster types to look for:
-        - Banjir (Flood)
-        - Gempa Bumi (Earthquake)
-        - Tanah Longsor (Landslide)
-        - Kebakaran (Fire)
-        - Badai/Angin Kuat (Storm/Strong Wind)
-        - Tsunami
-        - Erupsi Gunung Berapi (Volcanic Eruption)
-        - Kerusakan Struktur Gedung/Rumah (Building/ House Damage)
+        # First, get image caption
+        response = requests.post(API_URL, headers=headers, data=image_bytes)
         
-        Respond ONLY with this exact JSON format (no other text):
-        {
-            "is_disaster": true or false,
-            "disaster_type": "specific type or null",
-            "confidence": 0.0 to 1.0,
-            "reason": "brief explanation"
-        }"""
+        if response.status_code != 200:
+            raise Exception(f"HuggingFace API error: {response.text}")
         
-        # Create the content with image
-        contents = [
-            disaster_check_prompt,
-            image_part
-        ]
+        caption_result = response.json()
+        caption = caption_result[0]['generated_text'] if isinstance(caption_result, list) else caption_result.get('generated_text', '')
         
-        response = model.generate_content(contents)
+        # Now use the caption to determine disaster type
+        # Based on user's prompt
+        caption_lower = caption.lower()
         
-        # Parse the response
-        import re
-        import json
+        # Determine disaster type based on caption
+        disaster = "none"
+        confidence = 0.3
+        severity = "low"
+        reason = "no clear destructive disaster visible"
         
-        # Extract JSON from response
-        response_text = response.text
-        json_match = re.search(r'\{[^{}]*\}', response_text, re.DOTALL)
+        # Check for flood indicators
+        flood_keywords = ['flood', 'flooded', 'water', 'inundated', 'submerged', 'rising water']
+        if any(kw in caption_lower for kw in flood_keywords):
+            disaster = "flood"
+            confidence = 0.8
+            severity = "high" if 'street' in caption_lower or 'city' in caption_lower else "medium"
+            reason = f"Caption indicates flooding: {caption}"
         
-        if json_match:
-            disaster_result = json.loads(json_match.group())
-        else:
-            # Try to parse the whole response
-            disaster_result = json.loads(response_text)
+        # Check for fire indicators
+        fire_keywords = ['fire', 'flame', 'smoke', 'burning', 'firefighter']
+        if any(kw in caption_lower for kw in fire_keywords):
+            disaster = "fire"
+            confidence = 0.85
+            severity = "high"
+            reason = f"Caption indicates fire: {caption}"
         
-        # Step 2: If not a disaster, reject the upload
-        if not disaster_result.get('is_disaster', False):
+        # Check for earthquake indicators
+        earthquake_keywords = ['collapsed', 'destroyed', 'rubble', 'debris', 'damaged building', 'crack']
+        if any(kw in caption_lower for kw in earthquake_keywords):
+            disaster = "earthquake_damage"
+            confidence = 0.75
+            severity = "high"
+            reason = f"Caption indicates structural damage: {caption}"
+        
+        # Check for landslide
+        landslide_keywords = ['mud', 'landslide', 'rocks', 'debris flow']
+        if any(kw in caption_lower for kw in landslide_keywords):
+            disaster = "landslide"
+            confidence = 0.8
+            severity = "high"
+            reason = f"Caption indicates landslide: {caption}"
+        
+        # Check for tsunami/waves
+        tsunami_keywords = ['wave', 'tsunami', 'coast', 'beach flooding']
+        if any(kw in caption_lower for kw in tsunami_keywords):
+            disaster = "tsunami"
+            confidence = 0.7
+            severity = "high"
+            reason = f"Caption indicates coastal disaster: {caption}"
+        
+        # If not a disaster, reject
+        if disaster == "none":
             return jsonify({
                 "success": False,
                 "error": "Gambar yang Anda upload bukan foto bencana alam. Hanya foto bencana alam yang diperbolehkan untuk diupload.",
@@ -983,53 +997,38 @@ def assess_damage():
                 "is_disaster": False
             }), 400
         
-        # Step 3: If it is a disaster, analyze the damage
-        damage_analysis_prompt = f"""Analyze this disaster image and provide detailed damage assessment.
+        # Map disaster type for response
+        disaster_type_map = {
+            "flood": "Banjir",
+            "fire": "Kebakaran",
+            "earthquake_damage": "Gempa Bumi",
+            "landslide": "Tanah Longsor",
+            "tsunami": "Tsunami"
+        }
         
-        Disaster Type: {disaster_result.get('disaster_type', 'Unknown')}
-        
-        Provide damage assessment in this exact JSON format:
-        {{
-            "severity": "low" or "medium" or "high" or "critical",
-            "damage_description": "detailed description of visible damage",
-            "affected_areas": ["list of affected areas/structures"],
-            "recommended_actions": ["actionable recommendations"],
-            "estimated_impact": "brief impact assessment"
-        }}"""
-        
-        damage_contents = [
-            damage_analysis_prompt,
-            image_part
-        ]
-        damage_response = model.generate_content(damage_contents)
-        
-        # Parse damage response
-        damage_text = damage_response.text
-        damage_json_match = re.search(r'\{[^{}]*\}', damage_text, re.DOTALL)
-        
-        if damage_json_match:
-            damage_result = json.loads(damage_json_match.group())
-        else:
-            damage_result = json.loads(damage_text)
-        
-        # Return success with both results
+        # Return success with analysis
         return jsonify({
             "success": True,
             "is_disaster": True,
-            "disaster_type": disaster_result.get('disaster_type'),
-            "disaster_confidence": disaster_result.get('confidence', 0),
-            "severity": damage_result.get('severity', 'medium'),
-            "damage_type": disaster_result.get('disaster_type'),
-            "damage_description": damage_result.get('damage_description', ''),
-            "affected_areas": damage_result.get('affected_areas', []),
-            "recommended_actions": damage_result.get('recommended_actions', []),
-            "estimated_impact": damage_result.get('estimated_impact', ''),
-            "confidence": disaster_result.get('confidence', 0.8)
+            "disaster_type": disaster_type_map.get(disaster, disaster),
+            "visual_evidence": caption,
+            "confidence": confidence,
+            "severity": severity,
+            "reason": reason,
+            "damage_type": disaster,
+            "damage_description": f"Analysis of image shows {disaster} with {severity} severity",
+            "affected_areas": ["infrastructure", "residential areas"],
+            "recommended_actions": [
+                "Evacuate if necessary",
+                "Contact emergency services",
+                "Follow local authority instructions"
+            ],
+            "estimated_impact": f"{severity.capitalize()} impact requiring response"
         })
         
     except Exception as e:
         import traceback
-        print(f"Error analyzing image with Gemini: {e}")
+        print(f"Error analyzing image: {e}")
         print(traceback.format_exc())
         return jsonify({
             "success": False,
