@@ -924,13 +924,21 @@ def assess_damage():
         # Decode base64 image
         image_bytes = base64.b64decode(image_data)
         
-        # Use HuggingFace's image captioning model
-        # This model generates descriptions of images
-        API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
-        headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+        # Use HuggingFace's image captioning model via router
+        # Format: model path without /models/ prefix
+        API_URL = "https://router.huggingface.co/Salesforce/blip-image-captioning-base"
+        headers = {
+            "Authorization": f"Bearer {HF_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        # Prepare the payload for router endpoint
+        payload = {
+            "inputs": image_bytes
+        }
         
         # First, get image caption
-        response = requests.post(API_URL, headers=headers, data=image_bytes)
+        response = requests.post(API_URL, headers=headers, json=payload)
         
         if response.status_code != 200:
             raise Exception(f"HuggingFace API error: {response.text}")
