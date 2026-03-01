@@ -914,7 +914,7 @@ def assess_damage():
         import io
         
         # Configure Gemini API
-        GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', 'AIzaSyDjbclGw4Isx7U-Z21h4IQRPOvvDZaG1iY')
+        GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', 'AIzaSyCLPAGL0auXjTWPpbSW0BfsTOybLKyeIZw')
         genai.configure(api_key=GEMINI_API_KEY)
         
         # Use gemini-2.5-flash-image for image analysis
