@@ -944,8 +944,12 @@ def assess_damage():
         # First, get image caption
         response = requests.post(API_URL, headers=headers, json=payload)
         
+        # Debug: print response details
+        print(f"HF Response Status: {response.status_code}")
+        print(f"HF Response Text: {response.text[:500]}")
+        
         if response.status_code != 200:
-            raise Exception(f"HuggingFace API error: {response.text}")
+            raise Exception(f"HuggingFace API error: {response.text[:200]}")
         
         caption_result = response.json()
         caption = caption_result[0]['generated_text'] if isinstance(caption_result, list) else caption_result.get('generated_text', '')
