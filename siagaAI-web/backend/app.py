@@ -910,6 +910,8 @@ def assess_damage():
     
     try:
         import google.generativeai as genai
+        import base64
+        import io
         
         # Configure Gemini API
         GEMINI_API_KEY = "AIzaSyCbgl8hIPysCv0dmlmU-aeydX4OUBrvYq8"
@@ -917,6 +919,17 @@ def assess_damage():
         
         # Use gemini-pro-vision for image analysis (free tier)
         model = genai.GenerativeModel('gemini-pro-vision')
+        
+        # Extract image from base64 data URL if needed
+        if ',' in image_data:
+            # Format: data:image/jpeg;base64,XXXXX
+            image_data = image_data.split(',')[1]
+        
+        # Create image part
+        image_part = {
+            'mime_type': 'image/jpeg',
+            'data': base64.b64decode(image_data)
+        }
         
         # Step 1: Check if image is a disaster
         disaster_check_prompt = """Analyze this image and determine if it shows a natural disaster or emergency situation.
@@ -940,7 +953,10 @@ def assess_damage():
         }"""
         
         # Create the content with image
-        contents = [disaster_check_prompt, image_data]
+        contents = [
+            disaster_check_prompt,
+            image_part
+        ]
         
         response = model.generate_content(contents)
         
@@ -981,7 +997,10 @@ def assess_damage():
             "estimated_impact": "brief impact assessment"
         }}"""
         
-        damage_contents = [damage_analysis_prompt, image_data]
+        damage_contents = [
+            damage_analysis_prompt,
+            image_part
+        ]
         damage_response = model.generate_content(damage_contents)
         
         # Parse damage response
@@ -1009,7 +1028,9 @@ def assess_damage():
         })
         
     except Exception as e:
+        import traceback
         print(f"Error analyzing image with Gemini: {e}")
+        print(traceback.format_exc())
         return jsonify({
             "success": False,
             "error": f"Error analyzing image: {str(e)}"
