@@ -6,7 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
-
+import { AuthProvider } from './context/AuthContext'
 
 // App content
 function AppContent() {
@@ -14,7 +14,6 @@ function AppContent() {
   const [location, setLocation] = useState('jakarta')
   const [showChatbot, setShowChatbot] = useState(false)
   const [cities, setCities] = useState([])
-  
 
   // Fetch cities list
   useEffect(() => {
@@ -133,7 +132,7 @@ function AppContent() {
               ))}
             </nav>
 
-            {/* Chat Button & User/Admin */}
+            {/* Chat Button & Admin */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowChatbot(!showChatbot)}
@@ -142,32 +141,6 @@ function AppContent() {
                 <span className="text-lg">💬</span>
                 <span className="font-semibold hidden sm:inline">Chat AI</span>
               </button>
-
-              {/* User Login/Logout Button */}
-              {isAuthenticated ? (
-                <div className="flex items-center gap-2 ml-2">
-                  {user?.picture ? (
-                    <img 
-                      src={user.picture} 
-                      alt={user.name}
-                      className="w-8 h-8 rounded-full border-2 border-dark-border"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-bold">
-                      {user?.name?.charAt(0) || 'U'}
-                    </div>
-                  )}
-                  <button
-                    onClick={logout}
-                    className="px-3 py-2 rounded-xl text-dark-muted hover:text-danger-400 hover:bg-dark-card transition-colors flex items-center gap-2 border border-dark-border"
-                    title="Logout"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                  </button>
-                </div>
-              ) : null}
 
               {/* Admin Button */}
               <button
