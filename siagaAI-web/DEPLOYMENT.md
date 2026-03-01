@@ -38,10 +38,11 @@ git push -u origin main
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `python app.py`
 5. Add Environment Variables (di Railway dashboard → Variables tab):
-   - `GOOGLE_CLIENT_ID`: your Google Client ID
+   - `GOOGLE_CLIENT_ID`: your Google Client ID (for admin only)
    - `JWT_SECRET`: generate random string (32+ chars)
    - `MONGODB_URI`: your MongoDB Atlas connection string
    - `FLASK_ENV`: production
+   - `HF_API_KEY`: HuggingFace API key (optional, for damage assessment AI)
 6. Click "Deploy"
 
 ### 1.3 Get Backend URL
@@ -99,11 +100,12 @@ CORS(app, origins=["https://your-vercel-app.vercel.app"])
 
 | Variable | Backend | Frontend |
 |----------|---------|----------|
-| GOOGLE_CLIENT_ID | ✅ | ✅ |
+| GOOGLE_CLIENT_ID | ✅ (admin) | - |
 | JWT_SECRET | ✅ | - |
 | MONGODB_URI | ✅ | - |
 | VITE_API_URL | - | ✅ |
 | FLASK_ENV | ✅ | - |
+| HF_API_KEY | ✅ (optional) | - |
 
 ---
 

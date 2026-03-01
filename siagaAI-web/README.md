@@ -25,7 +25,7 @@ SiagaAI adalah platform informasi dan kesiapsiagaan bencana untuk masyarakat Ind
 ### 📸 Pelaporan Kerusakan
 - Unggah foto kerusakan akibat bencana
 - AI untuk penilaian tingkat kerusakan
-- Sistem login dengan Google untuk validasi pelapor
+- Público (tanpa login)
 
 ### 👤 Autentikasi
 - Login dengan Google (OAuth 2.0)
@@ -70,16 +70,15 @@ npm run dev
 
 ```
 siagaAI-web/
-├── API/                    # Referensi API BMKG
 ├── backend/
 │   ├── app.py            # Flask API
 │   ├── auth.py          # Google OAuth
+│   ├── admin.py         # Admin routes
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
 │   │   ├── components/  # Komponen React
-│   │   ├── context/     # Auth Context
-│   │   ├── pages/      # Halaman
+│   │   ├── pages/       # Halaman
 │   │   └── utils/      # Utilities
 │   └── package.json
 ├── DEPLOYMENT.md        # Panduan Deploy
