@@ -108,23 +108,68 @@ def get_fallback_weather(city_id):
     """Return fallback weather data when BMKG is unavailable"""
     city_name = next((c['name'] for c in INDONESIAN_CITIES if c['id'] == city_id), 'Unknown')
     
-    # Simulate realistic weather based on time of day
+    # Get realistic weather based on time of day (Indonesia timezone)
     import random
     hour = datetime.now().hour
     
-    # Jakarta typical weather
-    temps = [26, 27, 28, 29, 30, 31, 32]
-    humidities = [70, 75, 80, 85, 90]
-    wind_speeds = [5, 10, 15, 20]
+    # Time-based weather patterns for Indonesia
+    if 6 <= hour < 10:
+        # Morning - usually clear or cloudy
+        weather_conditions = [
+            ('Cerah', 0),
+            ('Cerah berawan', 1),
+            ('Berawan', 2)
+        ]
+    elif 10 <= hour < 15:
+        # Midday - hot, possible afternoon rain
+        weather_conditions = [
+            ('Cerah berawan', 1),
+            ('Berawan', 2),
+            ('Hujan ringan', 3)
+        ]
+    elif 15 <= hour < 19:
+        # Afternoon - often rainy season
+        weather_conditions = [
+            ('Berawan', 2),
+            ('Hujan ringan', 3),
+            ('Hujan sedang', 4)
+        ]
+    else:
+        # Evening/night
+        weather_conditions = [
+            ('Berawan', 2),
+            ('Cerah berawan', 1),
+            ('Hujan ringan', 3)
+        ]
+    
+    # Select weather based on time
+    weather_desc, weather_code = random.choice(weather_conditions)
+    
+    # Temperature based on time (Jakarta typical range)
+    if 6 <= hour < 9:
+        temp_range = (25, 28)
+    elif 9 <= hour < 15:
+        temp_range = (28, 33)
+    elif 15 <= hour < 19:
+        temp_range = (26, 30)
+    else:
+        temp_range = (25, 28)
+    
+    temperature = random.randint(temp_range[0], temp_range[1])
+    humidity = random.randint(65, 90)
+    wind_speed = random.randint(5, 20)
+    
+    directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+    wind_direction = random.choice(directions)
     
     return {
         'source': 'Fallback',
-        'temperature': random.choice(temps),
-        'humidity': random.choice(humidities),
-        'wind_speed': random.choice(wind_speeds),
-        'wind_direction': 'SE',
-        'weather_code': random.randint(0, 3),
-        'weather_desc': 'Cerah berawan',
+        'temperature': temperature,
+        'humidity': humidity,
+        'wind_speed': wind_speed,
+        'wind_direction': wind_direction,
+        'weather_code': weather_code,
+        'weather_desc': weather_desc,
         'local_datetime': datetime.now().isoformat(),
         'visibility': '10',
         'uv_index': str(random.randint(3, 8)),
@@ -135,26 +180,52 @@ def get_fallback_weather(city_id):
 def parse_bmkg_weather_data(data):
     """Parse BMKG weather data to our format"""
     try:
-        if not data or 'data' not in data or len(data['data']) == 0:
+        if not data:
             return None
-            
-        data_item = data['data'][0]
         
-        # Handle case where data_item might be a list instead of dict
-        if isinstance(data_item, list):
-            cuaca_data = data_item
-        else:
-            cuaca_data = data_item.get('cuaca', [])
+        # BMKG API response may have different structures
+        # Try to find the cuaca (weather) data in the response
+        cuaca_data = []
+        
+        # Handle various response formats from BMKG
+        if isinstance(data, dict):
+            # Try different keys
+            if 'data' in data and isinstance(data['data'], list):
+                for item in data['data']:
+                    if isinstance(item, dict) and 'cuaca' in item:
+                        cuaca_data = item['cuaca']
+                        break
+                    elif isinstance(item, list):
+                        # Check if it's a list of cuaca data
+                        for sub_item in item:
+                            if isinstance(sub_item, dict) and 'cuaca' in sub_item:
+                                cuaca_data = sub_item['cuaca']
+                                break
+                        if cuaca_data:
+                            break
+            elif 'cuaca' in data:
+                cuaca_data = data['cuaca']
+        elif isinstance(data, list):
+            # Data is directly a list
+            for item in data:
+                if isinstance(item, dict):
+                    if 'cuaca' in item:
+                        cuaca_data = item['cuaca']
+                        break
+                    elif 'weather' in item:
+                        cuaca_data = item['weather']
+                        break
         
         if not cuaca_data:
             return None
             
         # Get current hour forecast (first available)
-        current = cuaca_data[0] if cuaca_data else {}
-        
-        # Handle case where current might be a list
-        if isinstance(current, list):
-            current = current[0] if current else {}
+        current = {}
+        if len(cuaca_data) > 0:
+            if isinstance(cuaca_data[0], dict):
+                current = cuaca_data[0]
+            elif isinstance(cuaca_data[0], list) and len(cuaca_data[0]) > 0:
+                current = cuaca_data[0][0] if isinstance(cuaca_data[0][0], dict) else {}
         
         # Safely get values from current dict
         def safe_get(d, key, default='N/A'):
@@ -164,19 +235,21 @@ def parse_bmkg_weather_data(data):
         
         return {
             'source': 'BMKG',
-            'temperature': safe_get(current, 't', 'N/A'),
-            'humidity': safe_get(current, 'hu', 'N/A'),
-            'wind_speed': safe_get(current, 'ws', 'N/A'),
-            'wind_direction': safe_get(current, 'wd', 'N/A'),
+            'temperature': safe_get(current, 't', safe_get(current, 'temperature', 'N/A')),
+            'humidity': safe_get(current, 'hu', safe_get(current, 'humidity', 'N/A')),
+            'wind_speed': safe_get(current, 'ws', safe_get(current, 'wind_speed', 'N/A')),
+            'wind_direction': safe_get(current, 'wd', safe_get(current, 'wind_direction', 'N/A')),
             'weather_code': int(safe_get(current, 'weather_code', 0)) if safe_get(current, 'weather_code', 0) != 'N/A' else 0,
-            'weather_desc': safe_get(current, 'weather_desc', 'Unknown'),
-            'local_datetime': safe_get(current, 'local_datetime', ''),
+            'weather_desc': safe_get(current, 'weather_desc', safe_get(current, 'weather', 'Unknown')),
+            'local_datetime': safe_get(current, 'local_datetime', datetime.now().isoformat()),
             'visibility': safe_get(current, 'vs', '10'),
             'uv_index': safe_get(current, 'uv', '5'),
             'forecast': cuaca_data[:8] if len(cuaca_data) > 8 else cuaca_data
         }
     except Exception as e:
         print(f"Error parsing BMKG weather: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def fetch_bmkg_earthquake():
