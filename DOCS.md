@@ -13,6 +13,7 @@
 9. [Konfigurasi Environment](#konfigurasi-environment)
 10. [Panduan Instalasi](#panduan-instalasi)
 11. [Fitur Utama](#fitur-utama)
+12. [Disaster Classifier](#12-disaster-classifier)
 
 ---
 
@@ -182,8 +183,9 @@ siagaAI-web/
 | POST | `/api/reports` | Submit damage report | `city`, `description`, `image`, `location` |
 | POST | `/api/assess-damage` | AI damage assessment | `image` (base64) |
 | GET | `/api/stats` | Get statistics | - |
+| POST | `/api/classify-disaster` | Color-based disaster classification | `image` (base64) |
 
-### Authentication API Endpoints
+### Response Format
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
@@ -202,7 +204,78 @@ siagaAI-web/
 | POST | `/api/admin/reports/<report_id>/reject` | Reject report |
 | DELETE | `/api/admin/reports/<report_id>` | Delete report |
 | GET | `/api/admin/users` | Get all users |
-| GET | `/api/admin/stats` | Get admin statistics |
+| GET | `/api/admin/stats` | Get admin statistics | 
+
+## 12. Disaster Classifier
+
+Sistem klasifikasi bencana berbasis analisis warna gambar menggunakan pendekatan hybrid feature extraction.
+
+### 12.1 Arsitektur Modul
+
+**Lokasi**: `backend/disaster_classifier.py`
+
+| Fungsi | Deskripsi |
+|--------|-----------|
+| decode_base64_image() | Decode gambar base64 ke numpy array |
+| analyze_hsv_colors() | Analisis warna HSV |
+| calculate_glcm_features() | Ekstrak fitur tekstur GLCM |
+| analyze_edges_and_structure() | Edge detection Canny |
+| detect_lava() | Deteksi lava |
+| detect_cone_shape() | Deteksi bentuk kerucut (gunung) |
+| detect_smoke_advanced() | Deteksi asap |
+| detect_foam() | Deteksi busa (tsunami) |
+| detect_horizon() | Deteksi garis horizon |
+| detect_surface_flatness() | Deteksi permukaan datar |
+| classify_disaster() | Klasifikasi utama |
+
+### 12.2 Metode Ekstraksi Fitur
+
+**Analisis Warna (HSV):**
+- Merah (Hue 0-20): Api, lava
+- Oranye (Hue 20-40): Api, asap
+- Hijau (Hue 35-85): Vegetasi
+- Biru (Hue 85-130): Air, tsunami
+- Coklat (Hue 20-35, sat sedang): Banjir
+- Abu (low saturation): Asap
+- Putih (high value, low saturation): Busa
+
+**Analisis Tekstur (GLCM):**
+- Contrast, Energy, Homogeneity, Entropy
+
+**Edge Detection (Canny):**
+- Edge density, Horizontal/Vertical ratio, Irregular edges
+
+### 12.3 Aturan Klasifikasi
+
+| Disaster | Kriteria Utama |
+|----------|----------------|
+| Kebakaran | Merah+Oranye >=25% + Smoke + NO Cone |
+| Gunung Berapi | Lava + Cone OR Cone + Smoke |
+| Gempa | Building damage + Irregular edges >35% |
+| Tsunami | Wave + Horizon/Blue/Foam |
+| Banjir | Flat surface + Brown >25% + Homogeneity >60% |
+| Tanah Longsor | Green+Brown >=40% + Irregular >25% + Slope |
+
+**Threshold:** 0.65-0.75 (bergantung pada score gap)
+
+### 12.4 Endpoint API
+
+**POST /api/assess-damage**
+- Input: `{"image": "base64..."}`
+- Output: disaster_type, confidence, severity, recommendations, color_analysis
+
+**POST /api/classify-disaster**
+- Input: `{"image": "base64..."}`
+- Output: kategori_bencana, confidence_score, top_2_kemungkinan
+
+### 12.5 Catatan Penting
+
+1. **Bukan ML**: Rule-based color analysis (bukan machine learning)
+2. **No Memory**: Setiap upload dianalisis secara independen
+3. **Deterministik**: Gambar yang sama = hasil yang sama
+4. **Threshold Tinggi**: Banyak gambar -> "Tidak Teridentifikasi"
+
+### Response Format
 
 ### Response Format
 

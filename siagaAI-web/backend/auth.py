@@ -219,3 +219,4 @@ def register_auth_routes(app):
         }), 200
     
     print("Auth routes registered: /api/auth/google (admin only), /api/auth/me, /api/auth/verify, /api/auth/logout")
+

@@ -1045,6 +1045,46 @@ def generate_emergency_response(message, city):
     if any(k in message_lower for k in ['bantuan', 'help', 'darurat']):
         return f"📞 Kontak Darurat {city_name}:\n\n🚑 Ambulans: 118\n🚒 Pemadam: 113\n🏥 RS Terdekat: Hubungi dinas kesehatan kota\n\nTetten tenang dan ikuti instruksi petugas!"
     
+    # Handler for risk level queries
+    if any(k in message_lower for k in ['risiko', 'tingkat risiko', 'level risiko', 'seberapa berbahaya', 'status risiko']):
+        zones = [z for z in RISK_ZONES if z['city'] == city.lower()]
+        
+        if not zones:
+            return f"ℹ️ Info Risiko {city_name}:\n\nBelum ada data zona risiko untuk kota ini.\nTetap waspadai kondisi cuaca dan berita terkini!"
+        
+        high_risk = [z for z in zones if z['risk'] == 'high']
+        medium_risk = [z for z in zones if z['risk'] == 'medium']
+        low_risk = [z for z in zones if z['risk'] == 'low']
+        
+        # Determine overall risk level
+        if len(high_risk) >= 3:
+            overall_risk = "🔴 TINGGI"
+            warning = "⚠️ PERINGATAN: Ada beberapa zona risiko tinggi!"
+        elif len(high_risk) >= 1:
+            overall_risk = "🟠 SEDANG-TINGGI"
+            warning = "⚠️ PERINGATAN: Ada zona risiko tinggi di area ini!"
+        elif len(medium_risk) >= 2:
+            overall_risk = "🟡 SEDANG"
+            warning = "💡 Tetap waspadai perubahan cuaca!"
+        else:
+            overall_risk = "🟢 RENDAH"
+            warning = "✅ Kondisi relatif aman. Tetap tenang!"
+        
+        risk_info = f"📊 Tingkat Risiko Bencana di {city_name}:\n\n"
+        risk_info += f"🎯 Status Keseluruhan: {overall_risk}\n\n"
+        risk_info += f"Zona Berbahaya Tinggi: {len(high_risk)} lokasi\n"
+        risk_info += f"Zona Risiko Sedang: {len(medium_risk)} lokasi\n"
+        risk_info += f"Zona Risiko Rendah: {len(low_risk)} lokasi\n\n"
+        
+        if high_risk:
+            risk_info += "🚨 Zona Risiko Tinggi:"
+            for z in high_risk[:3]:
+                risk_info += f"\n• {z['name']} ({z['type']}) - {z['description']}"
+        
+        risk_info += f"\n\n{warning}"
+        
+        return risk_info
+    
     return f"""Halo! Saya SiagaAI, asisten tanggap darurat untuk {city_name}.
 
 Saya bisa membantu Anda dengan:
